@@ -1,0 +1,24 @@
+{
+  "name": "@theolive/validation",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "sync:edge": "node scripts/sync-edge.mjs"
+  },
+  "devDependencies": {
+    "@theolive/config": "workspace:*",
+    "@theolive/types": "workspace:*",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.5",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}
