@@ -1,0 +1,12 @@
+appId: com.anonymous.theolive
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Welcome'
+- assertVisible: 'Sign In'
+- tapOn: 'Email'
+- inputText: 'test@example.com'
+- tapOn: 'Password'
+- inputText: 'password123'
+- hideKeyboard
+- tapOn: 'Sign In'

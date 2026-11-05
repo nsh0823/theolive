@@ -1,0 +1,4 @@
+{
+  "extends": "@theolive/config/tsconfig.base.json",
+  "include": ["**/*.ts", "**/*.tsx"]
+}
