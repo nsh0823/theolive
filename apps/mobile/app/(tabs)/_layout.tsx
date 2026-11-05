@@ -34,6 +34,9 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>더보기</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="ellipsis" md="more_horiz" />
       </NativeTabs.Trigger>
+      {/* Legacy routes are not tabs: hide them so the bar stays exactly four items. */}
+      <NativeTabs.Trigger name="index" hidden />
+      <NativeTabs.Trigger name="profile" hidden />
     </NativeTabs>
   );
 }
