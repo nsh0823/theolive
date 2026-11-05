@@ -1,5 +1,6 @@
 import { Input, InputField } from '@theolive/ui/components/input';
 import { Text } from '@theolive/ui/components/text';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 
 import { PointCodeFeedback } from '@/components/reward/PointCodeFeedback';
@@ -10,6 +11,7 @@ import type { PointCodeResult } from '@/models';
 
 /** RW-05: the server validates format, expiry, and duplicates; the client only blocks empty input. */
 export default function PointCodeScreen() {
+  const router = useRouter();
   const [code, setCode] = useState('');
   const [result, setResult] = useState<PointCodeResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,12 +43,19 @@ export default function PointCodeScreen() {
           onChangeText={setCode}
           autoCapitalize="characters"
           autoCorrect={false}
-          accessibilityLabel="포인트 코드 입력"
+          aria-label="포인트 코드 입력"
           returnKeyType="done"
           onSubmitEditing={() => void submit()}
         />
       </Input>
       {result ? <PointCodeFeedback result={result} /> : null}
+      {result?.status === 'registered' ? (
+        <CtaButton
+          label="포인트 내역 보기"
+          variant="outline"
+          onPress={() => router.replace('/reward/points')}
+        />
+      ) : null}
       <CtaButton
         label="등록하기"
         onPress={() => void submit()}

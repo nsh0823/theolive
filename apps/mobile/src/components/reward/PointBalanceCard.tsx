@@ -1,29 +1,36 @@
 import { Heading } from '@theolive/ui/components/heading';
 import { Text } from '@theolive/ui/components/text';
+import { Coins } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { formatWon } from '@/lib/format';
 import type { PointSummary } from '@/models';
 
-import { Card } from '../ui/Card';
+import { AppIcon } from '../ui/AppIcon';
 
-/** Coupon Points balance, a separate asset from stamps. Points are denominated in won. */
+/**
+ * Coupon Points: a Warm Cream wallet-style card with a coin glyph, visually distinct from the
+ * olive Stamp card. Points are denominated in won and act as checkout credit.
+ */
 export function PointBalanceCard({ points }: { points: PointSummary }) {
   return (
-    <Card
-      className="gap-2"
+    <View
+      className="flex-row items-center gap-4 rounded-xl border border-sage bg-cream p-5"
       accessible
       accessibilityLabel={`쿠폰 포인트 잔액 ${formatWon(points.balance)}`}
     >
-      <Heading size="sm">쿠폰 포인트</Heading>
-      <View className="flex-row items-baseline gap-1">
-        <Text size="2xl" className="font-bold">
-          {formatWon(points.balance)}
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-secondary">
+        <AppIcon icon={Coins} tone="primary" size={24} />
+      </View>
+      <View className="flex-1 gap-0.5">
+        <Heading size="sm">쿠폰 포인트</Heading>
+        <Text size="xs" className="text-muted-foreground">
+          결제 금액에서 바로 차감돼요
         </Text>
       </View>
-      <Text size="sm" className="text-muted-foreground">
-        결제 금액에서 직접 차감할 수 있어요.
+      <Text size="2xl" className="font-bold text-primary">
+        {formatWon(points.balance)}
       </Text>
-    </Card>
+    </View>
   );
 }
