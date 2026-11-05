@@ -1,9 +1,10 @@
+import { useInviteStaff, useStaffList, useUpdateStaff, type StaffListItem } from '@theolive/api';
+import { APP_ERROR_MESSAGE, toAppErrorCode } from '@theolive/types';
 import { useState } from 'react';
-import { Pencil, Plus, ShieldAlert } from 'lucide-react';
-import { saveStaff } from '@/data/actions';
-import { useStaffQuery } from '@/data/queries';
+import { Pencil, Plus } from 'lucide-react';
+import { useSupabase } from '@/auth/AuthContext';
+import { toBoundaryStatus } from '@/data/queryStatus';
 import { STAFF_PERMISSION_LABEL } from '@/domain/labels';
-import type { StaffMember } from '@/domain/models';
 import { Badge, BADGE_TONE } from '@/ui/Badge';
 import { Button, IconButton } from '@/ui/Button';
 import { Card } from '@/ui/Card';
@@ -12,33 +13,79 @@ import { QueryBoundary } from '@/ui/QueryBoundary';
 import { Switch } from '@/ui/Switch';
 import { DataTable, Td, Th, Tr } from '@/ui/Table';
 import { useToast } from '@/ui/Toast';
-import { StaffFormDialog } from './StaffFormDialog';
+import { StaffFormDialog, type StaffFormValues } from './StaffFormDialog';
+
+function errorMessage(error: unknown): string {
+  return APP_ERROR_MESSAGE[toAppErrorCode(error instanceof Error ? error : null)];
+}
 
 export function StaffPage() {
-  const staff = useStaffQuery();
+  const client = useSupabase();
+  const staff = useStaffList(client);
+  const updateStaff = useUpdateStaff(client);
+  const inviteStaff = useInviteStaff(client);
   const { notify } = useToast();
-  const [target, setTarget] = useState<StaffMember | 'new' | null>(null);
-  const [deactivating, setDeactivating] = useState<StaffMember | null>(null);
+  const [target, setTarget] = useState<StaffListItem | 'new' | null>(null);
+  const [deactivating, setDeactivating] = useState<StaffListItem | null>(null);
+  const members = staff.data ?? [];
 
-  function toggleActive(member: StaffMember, isActive: boolean): void {
+  function saveMember(member: StaffListItem, successMessage: string, onDone?: () => void): void {
+    updateStaff.mutate(
+      {
+        userId: member.id,
+        displayName: member.name,
+        role: member.role,
+        permissions: member.permissions,
+        isActive: member.isActive,
+      },
+      {
+        onSuccess: () => {
+          notify(successMessage);
+          onDone?.();
+        },
+        onError: (error) => notify(errorMessage(error)),
+      },
+    );
+  }
+
+  function toggleActive(member: StaffListItem, isActive: boolean): void {
     if (!isActive) {
       setDeactivating(member);
       return;
     }
-    saveStaff({ ...member, isActive });
-    notify(`${member.name} 계정을 활성화했어요`);
+    saveMember({ ...member, isActive }, `${member.name} 계정을 활성화했어요`);
+  }
+
+  function handleSave(values: StaffFormValues): void {
+    if (target === 'new') {
+      inviteStaff.mutate(
+        {
+          email: values.email,
+          displayName: values.name,
+          role: 'STAFF',
+          permissions: values.permissions,
+        },
+        {
+          onSuccess: () => {
+            notify(`${values.name}님을 초대했어요`);
+            setTarget(null);
+          },
+          onError: (error) => notify(errorMessage(error)),
+        },
+      );
+      return;
+    }
+    if (target) {
+      saveMember(
+        { ...target, name: values.name, permissions: values.permissions },
+        '직원 정보를 저장했어요',
+        () => setTarget(null),
+      );
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="note" className="flex gap-3 rounded-2xl bg-cream px-5 py-4 text-sm">
-        <ShieldAlert className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-        <p>
-          이 화면의 직원·점주 구분과 권한 설정은{' '}
-          <strong>화면 표시용이며 보안 경계가 아니에요.</strong> 실제 접근 권한은 서버(RLS와 서버
-          검증)에서 확인해야 해요.
-        </p>
-      </div>
       <div className="flex justify-end">
         <Button
           icon={<Plus className="size-4" aria-hidden="true" />}
@@ -49,9 +96,9 @@ export function StaffPage() {
       </div>
       <Card>
         <QueryBoundary
-          status={staff.status}
-          isEmpty={staff.data.length === 0}
-          onRetry={staff.refetch}
+          status={toBoundaryStatus(staff.status)}
+          isEmpty={members.length === 0}
+          onRetry={() => void staff.refetch()}
           emptyTitle="등록된 직원이 없어요"
           emptyAction={<Button onClick={() => setTarget('new')}>직원 추가</Button>}
           loadingLabel="직원 목록을 불러오는 중이에요"
@@ -70,7 +117,7 @@ export function StaffPage() {
               </tr>
             </thead>
             <tbody>
-              {staff.data.map((member) => (
+              {members.map((member) => (
                 <Tr key={member.id}>
                   <Td className="font-semibold">{member.name}</Td>
                   <Td className="text-muted-foreground">{member.email}</Td>
@@ -113,13 +160,10 @@ export function StaffPage() {
       {target ? (
         <StaffFormDialog
           key={target === 'new' ? 'new' : target.id}
-          target={target}
+          existing={target === 'new' ? null : target}
+          isSaving={updateStaff.isPending || inviteStaff.isPending}
           onClose={() => setTarget(null)}
-          onSave={(member) => {
-            saveStaff(member);
-            notify(target === 'new' ? `${member.name}님을 초대했어요` : '직원 정보를 저장했어요');
-            setTarget(null);
-          }}
+          onSave={handleSave}
         />
       ) : null}
       <ConfirmDialog
@@ -131,8 +175,10 @@ export function StaffPage() {
         onCancel={() => setDeactivating(null)}
         onConfirm={() => {
           if (deactivating) {
-            saveStaff({ ...deactivating, isActive: false });
-            notify(`${deactivating.name} 계정을 비활성화했어요`);
+            saveMember(
+              { ...deactivating, isActive: false },
+              `${deactivating.name} 계정을 비활성화했어요`,
+            );
           }
           setDeactivating(null);
         }}

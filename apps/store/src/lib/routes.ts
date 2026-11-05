@@ -13,3 +13,5 @@ export const ROUTES = {
 
 export const memberDetailPath = (memberId: string): string => `/admin/members/${memberId}`;
 export const orderDetailPath = (orderId: string): string => `/admin/orders?order=${orderId}`;
+
+export const AUTH_ROUTES = { LOGIN: '/login', SET_PASSWORD: '/set-password' } as const;

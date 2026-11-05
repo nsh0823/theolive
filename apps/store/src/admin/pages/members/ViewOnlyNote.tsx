@@ -8,8 +8,8 @@ export function ViewOnlyNote() {
       <div className="flex flex-col gap-1">
         <p className="font-semibold">보기 전용 · 개인정보는 마스킹되어 표시됩니다</p>
         <p className="text-muted-foreground">
-          이 화면은 UI상 점주 전용이며 보안 경계가 아니에요. 실제 접근 권한 확인과 개인정보 마스킹은
-          서버에서 처리해야 해요.
+          관리자만 볼 수 있어요. 접근 권한 확인과 개인정보 마스킹은 서버에서 처리하고, 이 화면은
+          받은 내용을 그대로 보여줘요.
         </p>
       </div>
     </div>

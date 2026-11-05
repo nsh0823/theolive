@@ -1,5 +1,7 @@
+import { useSaveNotificationSettings } from '@theolive/api';
 import { Bell } from 'lucide-react';
-import { setNotificationSettings } from '@/data/actions';
+import { useSupabase } from '@/auth/AuthContext';
+import { describeError } from '@/lib/errorMessage';
 import type { NotificationSettings } from '@/domain/models';
 import { Card, CardBody, CardHeader } from '@/ui/Card';
 import { Switch } from '@/ui/Switch';
@@ -22,6 +24,7 @@ const OPTIONS: { key: keyof NotificationSettings; label: string; hint: string }[
 
 export function NotificationCard({ settings }: { settings: NotificationSettings }) {
   const { notify } = useToast();
+  const save = useSaveNotificationSettings(useSupabase());
   return (
     <Card>
       <CardHeader icon={<Bell className="size-5" />} title="알림 설정" />
@@ -38,10 +41,16 @@ export function NotificationCard({ settings }: { settings: NotificationSettings 
             <Switch
               checked={settings[option.key]}
               label={option.label}
-              onChange={(value) => {
-                setNotificationSettings({ ...settings, [option.key]: value });
-                notify('알림 설정을 저장했어요');
-              }}
+              disabled={save.isPending}
+              onChange={(value) =>
+                save.mutate(
+                  { ...settings, [option.key]: value },
+                  {
+                    onSuccess: () => notify('알림 설정을 저장했어요'),
+                    onError: (error) => notify(describeError(error)),
+                  },
+                )
+              }
             />
           </div>
         ))}

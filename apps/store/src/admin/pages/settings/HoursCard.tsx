@@ -1,6 +1,8 @@
+import { useSaveBusinessHours } from '@theolive/api';
 import { useState } from 'react';
 import { Clock } from 'lucide-react';
-import { setHours } from '@/data/actions';
+import { useSupabase } from '@/auth/AuthContext';
+import { describeError } from '@/lib/errorMessage';
 import { findInvalidHours } from '@/domain/hours';
 import { WEEKDAY_LABEL } from '@/domain/labels';
 import type { BusinessHours } from '@/domain/models';
@@ -15,6 +17,7 @@ export function HoursCard({ hours }: { hours: BusinessHours[] }) {
   const [draft, setDraft] = useState(hours);
   const [invalid, setInvalid] = useState<number[]>([]);
   const { notify } = useToast();
+  const saveHours = useSaveBusinessHours(useSupabase());
   const update = (weekday: number, patch: Partial<BusinessHours>) =>
     setDraft((list) => list.map((d) => (d.weekday === weekday ? { ...d, ...patch } : d)));
 
@@ -22,8 +25,10 @@ export function HoursCard({ hours }: { hours: BusinessHours[] }) {
     const bad = findInvalidHours(draft);
     setInvalid(bad);
     if (bad.length > 0) return;
-    setHours(draft);
-    notify('영업 시간을 저장했어요');
+    saveHours.mutate(draft, {
+      onSuccess: () => notify('영업 시간을 저장했어요'),
+      onError: (error) => notify(describeError(error)),
+    });
   }
 
   return (
@@ -72,7 +77,9 @@ export function HoursCard({ hours }: { hours: BusinessHours[] }) {
           })}
         </ul>
         <div className="mt-4">
-          <Button onClick={save}>저장</Button>
+          <Button onClick={save} disabled={saveHours.isPending}>
+            저장
+          </Button>
         </div>
       </CardBody>
     </Card>

@@ -11,7 +11,11 @@ import { NoticesPage } from '@/admin/pages/NoticesPage';
 import { StaffPage } from '@/admin/pages/StaffPage';
 import { SettingsPage } from '@/admin/pages/settings/SettingsPage';
 import { OrdersPage } from '@/orders/OrdersPage';
-import { ROUTES } from '@/lib/routes';
+import { AUTH_ROUTES, ROUTES } from '@/lib/routes';
+import { ACCESS_RULE } from '@/auth/accessRules';
+import { LoginPage } from '@/auth/LoginPage';
+import { RequireAccess } from '@/auth/RequireAccess';
+import { SetPasswordPage } from '@/auth/SetPasswordPage';
 import { ToastProvider } from '@/ui/Toast';
 
 /** One app, two surfaces (PRD 11.1): Store Web at /orders and Store Admin at /admin. */
@@ -20,18 +24,24 @@ export function App() {
     <ToastProvider>
       <Routes>
         <Route path="/" element={<Navigate to={ROUTES.ORDERS} replace />} />
-        <Route path="orders" element={<OrdersPage />} />
-        <Route path="admin" element={<AdminLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="menu" element={<MenuPage />} />
-          <Route path="orders" element={<OrderHistoryPage />} />
-          <Route path="members" element={<MembersPage />} />
-          <Route path="members/:memberId" element={<MemberDetailPage />} />
-          <Route path="rewards" element={<RewardsPage />} />
-          <Route path="points" element={<PointsPage />} />
-          <Route path="notices" element={<NoticesPage />} />
-          <Route path="staff" element={<StaffPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+        <Route path={AUTH_ROUTES.LOGIN} element={<LoginPage />} />
+        <Route path={AUTH_ROUTES.SET_PASSWORD} element={<SetPasswordPage />} />
+        <Route element={<RequireAccess rule={ACCESS_RULE.PROCESS_ORDERS} />}>
+          <Route path="orders" element={<OrdersPage />} />
+        </Route>
+        <Route element={<RequireAccess rule={ACCESS_RULE.ADMIN} />}>
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="menu" element={<MenuPage />} />
+            <Route path="orders" element={<OrderHistoryPage />} />
+            <Route path="members" element={<MembersPage />} />
+            <Route path="members/:memberId" element={<MemberDetailPage />} />
+            <Route path="rewards" element={<RewardsPage />} />
+            <Route path="points" element={<PointsPage />} />
+            <Route path="notices" element={<NoticesPage />} />
+            <Route path="staff" element={<StaffPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
         <Route path="*" element={<Navigate to={ROUTES.ORDERS} replace />} />
       </Routes>

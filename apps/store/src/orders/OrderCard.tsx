@@ -17,10 +17,12 @@ type OrderCardProps = {
   nowMs: number;
   onSelect: (order: Order) => void;
   onAction: (order: Order, action: StaffAction) => void;
+  /** An action is being sent: the quick action is disabled so a double tap cannot repeat it. */
+  isBusy?: boolean;
 };
 
 /** One order on the board. New orders get a NEW label, a pulse (motion-safe) and a heavier border. */
-export function OrderCard({ order, nowMs, onSelect, onAction }: OrderCardProps) {
+export function OrderCard({ order, nowMs, onSelect, onAction, isBusy = false }: OrderCardProps) {
   const isNew = order.status === ORDER_STATUS.PAID;
   const quickAction = availableStaffActions(order.status).find(
     (action) => action !== STAFF_ACTION.REJECT,
@@ -89,6 +91,7 @@ export function OrderCard({ order, nowMs, onSelect, onAction }: OrderCardProps) 
             size={BUTTON_SIZE.LG}
             className="w-full"
             icon={<QuickIcon className="size-5" aria-hidden="true" />}
+            disabled={isBusy}
             onClick={() => onAction(order, quickAction)}
             aria-label={`${order.orderNumber} ${STAFF_ACTION_LABEL[quickAction]}`}
           >

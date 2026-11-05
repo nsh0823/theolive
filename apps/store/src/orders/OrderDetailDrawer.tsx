@@ -15,6 +15,7 @@ type OrderDetailDrawerProps = {
   onClose: () => void;
   onAction: (order: Order, action: StaffAction) => void;
   onRequestReject: (order: Order) => void;
+  isBusy?: boolean;
 };
 
 /** Order detail with only the actions that are valid for the current status (PRD 7.1). */
@@ -23,6 +24,7 @@ export function OrderDetailDrawer({
   onClose,
   onAction,
   onRequestReject,
+  isBusy = false,
 }: OrderDetailDrawerProps) {
   const actions = order ? availableStaffActions(order.status) : [];
 
@@ -47,6 +49,7 @@ export function OrderDetailDrawer({
                   variant={isReject ? BUTTON_VARIANT.OUTLINE : BUTTON_VARIANT.PRIMARY}
                   className={isReject ? 'w-full border-destructive text-destructive' : 'w-full'}
                   icon={<Icon className="size-5" aria-hidden="true" />}
+                  disabled={isBusy}
                   onClick={() => (isReject ? onRequestReject(order) : onAction(order, action))}
                 >
                   {STAFF_ACTION_LABEL[action]}

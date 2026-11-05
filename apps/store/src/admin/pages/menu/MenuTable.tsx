@@ -54,7 +54,7 @@ export function MenuTable({
           return (
             <Tr key={item.id}>
               <Td>
-                <Thumbnail categoryId={item.categoryId} />
+                <Thumbnail imageUrl={item.imageUrl} />
               </Td>
               <Td>
                 <p className="font-semibold">{item.name}</p>
@@ -68,9 +68,11 @@ export function MenuTable({
               </Td>
               <Td>
                 <span className="flex gap-1">
-                  {item.temperatures.map((t) => (
-                    <TemperatureBadge key={t} temperature={t} />
-                  ))}
+                  {item.temperatures.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">선택 없음</span>
+                  ) : (
+                    item.temperatures.map((t) => <TemperatureBadge key={t} temperature={t} />)
+                  )}
                 </span>
               </Td>
               <Td>

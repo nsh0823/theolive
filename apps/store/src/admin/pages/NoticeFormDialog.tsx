@@ -1,35 +1,54 @@
 import { useState } from 'react';
+import type { AnnouncementView } from '@theolive/api';
 import {
-  NOTICE_BODY_MAX_LENGTH,
-  NOTICE_TITLE_MAX_LENGTH,
-  validateNotice,
-  type NoticeFormErrors,
-} from '@/domain/notice';
+  ANNOUNCEMENT_BODY_MAX_LENGTH,
+  ANNOUNCEMENT_TITLE_MAX_LENGTH,
+  announcementSchema,
+} from '@theolive/validation';
 import { NOTICE_STATUS_LABEL } from '@/domain/labels';
-import { NOTICE_STATUS, type Notice, type NoticeStatus } from '@/domain/models';
+import { NOTICE_STATUS, type NoticeStatus } from '@/domain/models';
 import { Button, BUTTON_VARIANT } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { TextAreaField, TextField } from '@/ui/Fields';
 
 export function NoticeFormDialog({
   target,
+  isSaving,
+  error,
   onClose,
   onSave,
 }: {
-  target: Notice | 'new';
+  target: AnnouncementView | 'new';
+  isSaving: boolean;
+  /** A server refusal, shown above the buttons. */
+  error: string | null;
   onClose: () => void;
-  onSave: (title: string, body: string, status: NoticeStatus, existing: Notice | null) => void;
+  onSave: (
+    title: string,
+    body: string,
+    status: NoticeStatus,
+    existing: AnnouncementView | null,
+  ) => void;
 }) {
   const existing = target === 'new' ? null : target;
   const [title, setTitle] = useState(existing?.title ?? '');
   const [body, setBody] = useState(existing?.body ?? '');
   const [status, setStatus] = useState<NoticeStatus>(existing?.status ?? NOTICE_STATUS.UNPUBLISHED);
-  const [errors, setErrors] = useState<NoticeFormErrors>({});
+  const [errors, setErrors] = useState<Partial<Record<'title' | 'body', string>>>({});
 
   function submit(): void {
-    const found = validateNotice(title, body);
-    setErrors(found);
-    if (Object.keys(found).length === 0) onSave(title.trim(), body.trim(), status, existing);
+    const parsed = announcementSchema.safeParse({ title, body, status });
+    if (!parsed.success) {
+      const found: Partial<Record<'title' | 'body', string>> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if ((field === 'title' || field === 'body') && !found[field]) found[field] = issue.message;
+      }
+      setErrors(found);
+      return;
+    }
+    setErrors({});
+    onSave(parsed.data.title, parsed.data.body, parsed.data.status, existing);
   }
 
   return (
@@ -43,7 +62,9 @@ export function NoticeFormDialog({
           <Button variant={BUTTON_VARIANT.OUTLINE} onClick={onClose}>
             취소
           </Button>
-          <Button onClick={submit}>저장</Button>
+          <Button onClick={submit} disabled={isSaving}>
+            저장
+          </Button>
         </>
       }
     >
@@ -58,14 +79,14 @@ export function NoticeFormDialog({
         <TextField
           label="제목"
           data-autofocus
-          maxLength={NOTICE_TITLE_MAX_LENGTH}
+          maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
           value={title}
           error={errors.title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <TextAreaField
           label="내용"
-          maxLength={NOTICE_BODY_MAX_LENGTH}
+          maxLength={ANNOUNCEMENT_BODY_MAX_LENGTH}
           className="min-h-40"
           value={body}
           error={errors.body}
@@ -91,6 +112,11 @@ export function NoticeFormDialog({
             ))}
           </div>
         </fieldset>
+        {error ? (
+          <p role="alert" className="text-sm font-semibold text-destructive">
+            {error}
+          </p>
+        ) : null}
       </form>
     </Dialog>
   );

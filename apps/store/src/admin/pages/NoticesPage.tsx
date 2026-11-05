@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
-import { deleteNotice, nextId, saveNotice, setNoticeStatus } from '@/data/actions';
-import { useNoticesQuery } from '@/data/queries';
+import {
+  useAnnouncementsAdmin,
+  useDeleteAnnouncement,
+  useSaveAnnouncement,
+  useSetAnnouncementStatus,
+  type AnnouncementView,
+} from '@theolive/api';
+import { useSupabase } from '@/auth/AuthContext';
+import { toBoundaryStatus } from '@/data/queryStatus';
 import { NOTICE_STATUS_LABEL } from '@/domain/labels';
-import { NOTICE_STATUS, type Notice } from '@/domain/models';
+import { NOTICE_STATUS } from '@/domain/models';
+import { describeError } from '@/lib/errorMessage';
 import { Badge, BADGE_TONE } from '@/ui/Badge';
 import { Button, IconButton } from '@/ui/Button';
 import { Card } from '@/ui/Card';
@@ -15,11 +23,16 @@ import { formatDateTime } from '@/lib/format';
 import { NoticeFormDialog } from './NoticeFormDialog';
 
 export function NoticesPage() {
-  const notices = useNoticesQuery();
+  const client = useSupabase();
+  const notices = useAnnouncementsAdmin(client);
+  const save = useSaveAnnouncement(client);
+  const setStatus = useSetAnnouncementStatus(client);
+  const remove = useDeleteAnnouncement(client);
   const { notify } = useToast();
-  const [target, setTarget] = useState<Notice | 'new' | null>(null);
-  const [deleting, setDeleting] = useState<Notice | null>(null);
-  const sorted = [...notices.data].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [target, setTarget] = useState<AnnouncementView | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<AnnouncementView | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const list = notices.data ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,9 +46,9 @@ export function NoticesPage() {
       </div>
       <Card>
         <QueryBoundary
-          status={notices.status}
-          isEmpty={sorted.length === 0}
-          onRetry={notices.refetch}
+          status={toBoundaryStatus(notices.status)}
+          isEmpty={list.length === 0}
+          onRetry={() => void notices.refetch()}
           emptyTitle="작성된 공지가 없어요"
           emptyDescription="고객 앱에 보여줄 첫 공지를 작성해 보세요."
           emptyAction={<Button onClick={() => setTarget('new')}>공지 작성</Button>}
@@ -54,7 +67,7 @@ export function NoticesPage() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((notice) => {
+              {list.map((notice) => {
                 const isPublished = notice.status === NOTICE_STATUS.PUBLISHED;
                 return (
                   <Tr key={notice.id}>
@@ -78,16 +91,26 @@ export function NoticesPage() {
                         <IconButton
                           label={`${notice.title} ${isPublished ? '비공개로 전환' : '게시'}`}
                           className="size-11"
-                          onClick={() => {
-                            setNoticeStatus(
-                              notice.id,
-                              isPublished ? NOTICE_STATUS.UNPUBLISHED : NOTICE_STATUS.PUBLISHED,
-                              new Date().toISOString(),
-                            );
-                            notify(
-                              isPublished ? '공지를 비공개로 전환했어요' : '공지를 게시했어요',
-                            );
-                          }}
+                          disabled={setStatus.isPending}
+                          onClick={() =>
+                            setStatus.mutate(
+                              {
+                                id: notice.id,
+                                status: isPublished
+                                  ? NOTICE_STATUS.UNPUBLISHED
+                                  : NOTICE_STATUS.PUBLISHED,
+                              },
+                              {
+                                onSuccess: () =>
+                                  notify(
+                                    isPublished
+                                      ? '공지를 비공개로 전환했어요'
+                                      : '공지를 게시했어요',
+                                  ),
+                                onError: (error) => notify(describeError(error)),
+                              },
+                            )
+                          }
                         >
                           {isPublished ? (
                             <EyeOff className="size-4" aria-hidden="true" />
@@ -122,26 +145,24 @@ export function NoticesPage() {
         <NoticeFormDialog
           key={target === 'new' ? 'new' : target.id}
           target={target}
-          onClose={() => setTarget(null)}
-          onSave={(title, body, status, existing) => {
-            const nowIso = new Date().toISOString();
-            const wasPublished = existing?.status === NOTICE_STATUS.PUBLISHED;
-            const publishedAt =
-              status === NOTICE_STATUS.PUBLISHED
-                ? wasPublished
-                  ? (existing?.publishedAt ?? nowIso)
-                  : nowIso
-                : null;
-            saveNotice({
-              id: existing?.id ?? nextId('notice'),
-              title,
-              body,
-              status,
-              createdAt: existing?.createdAt ?? nowIso,
-              publishedAt,
-            });
-            notify('공지를 저장했어요');
+          isSaving={save.isPending}
+          error={saveError}
+          onClose={() => {
+            setSaveError(null);
             setTarget(null);
+          }}
+          onSave={(title, body, status, existing) => {
+            setSaveError(null);
+            save.mutate(
+              { id: existing?.id ?? null, title, body, status },
+              {
+                onSuccess: () => {
+                  notify('공지를 저장했어요');
+                  setTarget(null);
+                },
+                onError: (error) => setSaveError(describeError(error)),
+              },
+            );
           }}
         />
       ) : null}
@@ -153,9 +174,12 @@ export function NoticesPage() {
         isDestructive
         onCancel={() => setDeleting(null)}
         onConfirm={() => {
-          if (deleting) deleteNotice(deleting.id);
+          if (!deleting) return;
+          remove.mutate(deleting.id, {
+            onSuccess: () => notify('공지를 삭제했어요'),
+            onError: (error) => notify(describeError(error)),
+          });
           setDeleting(null);
-          notify('공지를 삭제했어요');
         }}
       />
     </div>

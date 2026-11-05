@@ -1,13 +1,9 @@
 import { Link, useParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import {
-  useMembersQuery,
-  useOrdersQuery,
-  usePointLedgersQuery,
-  useStampLedgersQuery,
-} from '@/data/queries';
-import { QUERY_STATUS, type QueryStatus } from '@/data/useFixtureQuery';
-import { computeMemberStats, ordersOfMember } from '@/domain/members';
+import { AppError, useMember } from '@theolive/api';
+import { APP_ERROR } from '@theolive/types';
+import { useSupabase } from '@/auth/AuthContext';
+import { toBoundaryStatus } from '@/data/queryStatus';
 import { QueryBoundary } from '@/ui/QueryBoundary';
 import { buttonClasses, BUTTON_VARIANT } from '@/ui/Button';
 import { ROUTES } from '@/lib/routes';
@@ -17,27 +13,17 @@ import { MemberProfileCard } from './MemberProfileCard';
 import { MemberStampSection } from './MemberStampSection';
 import { ViewOnlyNote } from './ViewOnlyNote';
 
-function firstNotSuccess(statuses: QueryStatus[]): QueryStatus {
-  return statuses.find((s) => s !== QUERY_STATUS.SUCCESS) ?? QUERY_STATUS.SUCCESS;
+function isNotFound(error: unknown): boolean {
+  return error instanceof AppError && error.code === APP_ERROR.NOT_FOUND;
 }
 
 /** /admin/members/:memberId. Stamps and points are separate sections with separate data; nothing mutates. */
 export function MemberDetailPage() {
   const { memberId } = useParams();
-  const members = useMembersQuery();
-  const orders = useOrdersQuery();
-  const stamps = useStampLedgersQuery();
-  const points = usePointLedgersQuery();
-
-  const status = firstNotSuccess([members.status, orders.status, stamps.status, points.status]);
-  const member = members.data.find((m) => m.id === memberId) ?? null;
-  const retry = () => {
-    members.refetch();
-    orders.refetch();
-    stamps.refetch();
-    points.refetch();
-  };
-  const memberOrders = member ? ordersOfMember(orders.data, member.id) : [];
+  const query = useMember(useSupabase(), memberId);
+  const member = query.data ?? null;
+  // An unknown member is an answer, not a failure: show the "not found" state instead of a retry.
+  const missing = query.isError && isNotFound(query.error);
 
   return (
     <div className="flex flex-col gap-5">
@@ -49,9 +35,9 @@ export function MemberDetailPage() {
       </Link>
       <ViewOnlyNote />
       <QueryBoundary
-        status={status}
+        status={missing ? 'success' : toBoundaryStatus(query.status)}
         isEmpty={member === null}
-        onRetry={retry}
+        onRetry={() => void query.refetch()}
         emptyTitle="회원을 찾을 수 없어요"
         emptyDescription="목록으로 돌아가 다시 선택해 주세요."
         loadingLabel="회원 정보를 불러오는 중이에요"
@@ -59,12 +45,12 @@ export function MemberDetailPage() {
         {member ? (
           <>
             <div className="grid gap-5 2xl:grid-cols-2">
-              <MemberProfileCard member={member} stats={computeMemberStats(memberOrders)} />
-              <MemberOrdersCard orders={memberOrders} />
+              <MemberProfileCard member={member} />
+              <MemberOrdersCard orders={member.orders} />
             </div>
             <div className="grid gap-5 2xl:grid-cols-2">
-              <MemberStampSection entries={stamps.data[member.id] ?? []} />
-              <MemberPointSection entries={points.data[member.id] ?? []} />
+              <MemberStampSection balance={member.stampBalance} entries={member.stampLedger} />
+              <MemberPointSection balance={member.pointBalance} entries={member.pointLedger} />
             </div>
           </>
         ) : null}

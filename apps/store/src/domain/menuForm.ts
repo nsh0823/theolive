@@ -1,10 +1,13 @@
+import { menuItemInputSchema } from '@theolive/validation';
 import { TEMPERATURE, type MenuCategory, type MenuItem, type Temperature } from './models';
 
-export const MENU_NAME_MAX_LENGTH = 30;
-export const MENU_DESCRIPTION_MAX_LENGTH = 100;
-export const MENU_PRICE_MAX = 100000;
+export {
+  MENU_DESCRIPTION_MAX_LENGTH,
+  MENU_NAME_MAX_LENGTH,
+  MENU_PRICE_MAX,
+} from '@theolive/validation';
 
-/** HOT / ICE are the only options the MVP supports (brief; PRD ORD-04). */
+/** HOT / ICE are the only options the MVP supports (brief; PRD ORD-04). No selection means no temperature choice (OQ-16). */
 export const MENU_TEMPERATURE_CHOICES: readonly Temperature[] = [TEMPERATURE.HOT, TEMPERATURE.ICE];
 
 export type MenuFormValues = {
@@ -26,50 +29,37 @@ export type MenuFormFields = Pick<
 >;
 
 export type MenuFormResult =
-  | {
-      ok: true;
-      fields: Pick<
-        MenuItem,
-        'name' | 'description' | 'price' | 'categoryId' | 'temperatures' | 'isActive'
-      >;
-    }
-  | { ok: false; errors: MenuFormErrors };
+  { ok: true; fields: MenuFormFields } | { ok: false; errors: MenuFormErrors };
 
-/** UI validation only; the server validates again before saving. */
+const FIELD_FOR_PATH: Record<string, keyof MenuFormErrors> = {
+  name: 'name',
+  description: 'description',
+  price: 'price',
+  categoryId: 'category',
+  temperatures: 'temperatures',
+};
+
+const fieldsSchema = menuItemInputSchema.omit({ imagePath: true });
+
+/** UI validation with the shared schema; the server and the database check again before saving. */
 export function validateMenuForm(values: MenuFormValues): MenuFormResult {
+  const priceText = values.priceText.trim();
+  const parsed = fieldsSchema.safeParse({
+    name: values.name,
+    description: values.description,
+    price: priceText === '' ? Number.NaN : Number(priceText),
+    categoryId: values.categoryId,
+    temperatures: values.temperatures,
+    isActive: values.isActive,
+  });
+  if (parsed.success) return { ok: true, fields: parsed.data };
+
   const errors: MenuFormErrors = {};
-  const name = values.name.trim();
-  const price = Number(values.priceText);
-
-  if (name === '') errors.name = '메뉴 이름을 입력해 주세요.';
-  else if (name.length > MENU_NAME_MAX_LENGTH)
-    errors.name = `이름은 ${MENU_NAME_MAX_LENGTH}자 이내로 입력해 주세요.`;
-  if (values.description.length > MENU_DESCRIPTION_MAX_LENGTH)
-    errors.description = `설명은 ${MENU_DESCRIPTION_MAX_LENGTH}자 이내로 입력해 주세요.`;
-  if (
-    values.priceText.trim() === '' ||
-    !Number.isInteger(price) ||
-    price <= 0 ||
-    price > MENU_PRICE_MAX
-  ) {
-    errors.price = `가격은 1원 이상 ${MENU_PRICE_MAX.toLocaleString('ko-KR')}원 이하의 숫자로 입력해 주세요.`;
+  for (const issue of parsed.error.issues) {
+    const field = FIELD_FOR_PATH[String(issue.path[0])];
+    if (field && !errors[field]) errors[field] = issue.message;
   }
-  if (values.categoryId === '') errors.category = '카테고리를 선택해 주세요.';
-  if (values.temperatures.length === 0)
-    errors.temperatures = 'HOT 또는 ICE를 하나 이상 선택해 주세요.';
-
-  if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return {
-    ok: true,
-    fields: {
-      name,
-      description: values.description.trim(),
-      price,
-      categoryId: values.categoryId,
-      temperatures: values.temperatures,
-      isActive: values.isActive,
-    },
-  };
+  return { ok: false, errors };
 }
 
 export function initialMenuFormValues(

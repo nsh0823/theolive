@@ -1,6 +1,8 @@
 import { formatDateTime, formatWon } from '@/lib/format';
 import { PAYMENT_METHOD_LABEL } from '@/domain/labels';
 import { ORDER_STATUS, type Order } from '@/domain/models';
+import { describeRefund } from '@/domain/refundState';
+import { useNow } from '@/lib/useNow';
 import { OrderStatusBadge, OrderTypeBadge, PaymentStatusBadge, TemperatureBadge } from './badges';
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -14,6 +16,8 @@ function Row({ label, value }: { label: string; value: string }) {
 
 /** Read-only order detail shared by Store Web (order drawer) and Store Admin (order history). */
 export function OrderDetailBody({ order }: { order: Order }) {
+  const nowMs = useNow();
+  const refund = describeRefund(order, nowMs);
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -65,8 +69,19 @@ export function OrderDetailBody({ order }: { order: Order }) {
           <p className="rounded-xl bg-destructive-soft px-4 py-3 text-sm text-destructive">
             {order.rejectReason ?? '사유 미기록'}
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            환불 처리 방식은 정책 확정 전입니다. 결제 상태는 서버 처리 결과를 따릅니다.
+        </section>
+      ) : null}
+
+      {order.status === ORDER_STATUS.CANCELLED && order.cancelReason ? (
+        <section aria-labelledby="order-cancel-heading">
+          <h3
+            id="order-cancel-heading"
+            className="mb-2 text-sm font-semibold text-muted-foreground"
+          >
+            취소 사유
+          </h3>
+          <p className="rounded-xl bg-destructive-soft px-4 py-3 text-sm text-destructive">
+            {order.cancelReason}
           </p>
         </section>
       ) : null}
@@ -78,7 +93,10 @@ export function OrderDetailBody({ order }: { order: Order }) {
         <dl className="divide-y divide-border">
           <Row label="메뉴 금액" value={formatWon(order.menuAmount)} />
           {order.couponDiscount > 0 ? (
-            <Row label="쿠폰 할인" value={`-${formatWon(order.couponDiscount)}`} />
+            <Row
+              label={order.couponTitle ? `쿠폰 할인 · ${order.couponTitle}` : '쿠폰 할인'}
+              value={`-${formatWon(order.couponDiscount)}`}
+            />
           ) : null}
           {order.pointsUsed > 0 ? (
             <Row label="쿠폰 포인트 사용" value={`-${formatWon(order.pointsUsed)}`} />
@@ -94,6 +112,7 @@ export function OrderDetailBody({ order }: { order: Order }) {
               <PaymentStatusBadge status={order.paymentStatus} />
             </dd>
           </div>
+          {refund ? <Row label="환불" value={refund} /> : null}
         </dl>
       </section>
     </div>

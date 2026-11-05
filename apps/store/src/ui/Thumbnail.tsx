@@ -1,17 +1,24 @@
-import { Coffee, CupSoda, Cookie, Leaf, Milk, type LucideIcon } from 'lucide-react';
+import { Coffee, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-// No product photography exists yet; same cream placeholder tile as the customer app (DESIGN.md).
-const CATEGORY_ICON: Record<string, LucideIcon> = {
-  coffee: Coffee,
-  latte: Milk,
-  'non-coffee': CupSoda,
-  tea: Leaf,
-  dessert: Cookie,
+type ThumbnailProps = {
+  /** Public URL of the product photo; without one a cream placeholder tile is shown (DESIGN.md). */
+  imageUrl: string | null;
+  className?: string;
+  Icon?: LucideIcon;
 };
 
-export function Thumbnail({ categoryId, className }: { categoryId: string; className?: string }) {
-  const Icon = CATEGORY_ICON[categoryId] ?? Coffee;
+export function Thumbnail({ imageUrl, className, Icon = Coffee }: ThumbnailProps) {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt=""
+        loading="lazy"
+        className={cn('inline-block size-12 shrink-0 rounded-xl bg-cream object-cover', className)}
+      />
+    );
+  }
   return (
     <span
       aria-hidden="true"

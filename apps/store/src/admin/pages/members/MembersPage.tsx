@@ -1,15 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { useMembersQuery, useOrdersQuery } from '@/data/queries';
-import { QUERY_STATUS } from '@/data/useFixtureQuery';
-import { LOGIN_PROVIDER_LABEL } from '@/domain/labels';
-import {
-  EMPTY_MEMBER_FILTERS,
-  computeMemberStats,
-  filterMembers,
-  hasActiveMemberFilters,
-  ordersOfMember,
-} from '@/domain/members';
+import { MEMBER_PAGE_SIZE, useMembers } from '@theolive/api';
+import { useSupabase } from '@/auth/AuthContext';
+import { toBoundaryStatus } from '@/data/queryStatus';
+import { loginProviderLabel } from '@/domain/labels';
 import { Badge } from '@/ui/Badge';
 import { Button, BUTTON_VARIANT } from '@/ui/Button';
 import { Card, CardBody } from '@/ui/Card';
@@ -17,55 +11,55 @@ import { QueryBoundary } from '@/ui/QueryBoundary';
 import { DataTable, Td, Th, Tr } from '@/ui/Table';
 import { formatCount, formatDate, formatWon } from '@/lib/format';
 import { memberDetailPath } from '@/lib/routes';
+import { MS_PER_SECOND } from '@/lib/time';
 import { MemberFiltersBar } from './MemberFiltersBar';
 import { ViewOnlyNote } from './ViewOnlyNote';
 
-/** 회원관리 list. View only: there is deliberately no button here that changes a member. */
-export function MembersPage() {
-  const members = useMembersQuery();
-  const orders = useOrdersQuery();
-  const [filters, setFilters] = useState(EMPTY_MEMBER_FILTERS);
+const SEARCH_DEBOUNCE_MS = MS_PER_SECOND / 3;
 
-  const status = members.status === QUERY_STATUS.SUCCESS ? orders.status : members.status;
-  const results = filterMembers(members.data, orders.data, filters);
-  const isFiltered = hasActiveMemberFilters(filters);
-  const retry = () => {
-    members.refetch();
-    orders.refetch();
-  };
+/** 회원관리 list. View only. Search and paging happen on the server, which also masks email and phone. */
+export function MembersPage() {
+  const client = useSupabase();
+  const [input, setInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(input.trim());
+      setOffset(0);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [input]);
+
+  const query = useMembers(client, { search, limit: MEMBER_PAGE_SIZE, offset });
+  const members = query.data?.members ?? [];
+  const total = query.data?.total ?? 0;
+  const isFiltered = search !== '';
+  const pageEnd = Math.min(offset + members.length, total);
 
   return (
     <div className="flex flex-col gap-5">
       <ViewOnlyNote />
       <Card>
         <CardBody>
-          <MemberFiltersBar filters={filters} onChange={setFilters} />
+          <MemberFiltersBar value={input} onChange={setInput} />
         </CardBody>
       </Card>
       <Card>
         <QueryBoundary
-          status={status}
-          isEmpty={results.length === 0}
-          onRetry={retry}
+          status={toBoundaryStatus(query.status)}
+          isEmpty={members.length === 0}
+          onRetry={() => void query.refetch()}
           emptyTitle={isFiltered ? '조건에 맞는 회원이 없어요' : '아직 가입한 회원이 없어요'}
-          emptyDescription={isFiltered ? '검색어나 필터를 바꿔 보세요.' : undefined}
-          emptyAction={
-            isFiltered ? (
-              <Button
-                variant={BUTTON_VARIANT.OUTLINE}
-                onClick={() => setFilters(EMPTY_MEMBER_FILTERS)}
-              >
-                필터 초기화
-              </Button>
-            ) : undefined
-          }
+          emptyDescription={isFiltered ? '닉네임이나 주문번호를 다시 확인해 보세요.' : undefined}
           loadingLabel="회원 목록을 불러오는 중이에요"
         >
           <p
             className="border-b border-border px-5 py-3 text-sm text-muted-foreground"
             aria-live="polite"
           >
-            총 {results.length}명
+            총 {formatCount(total)}명 · {offset + 1}-{pageEnd}번째
           </p>
           <DataTable caption="회원 목록 (개인정보 마스킹)">
             <thead>
@@ -80,38 +74,51 @@ export function MembersPage() {
               </tr>
             </thead>
             <tbody>
-              {results.map((member) => {
-                const stats = computeMemberStats(ordersOfMember(orders.data, member.id));
-                return (
-                  <Tr key={member.id}>
-                    <Td>
-                      <Link
-                        to={memberDetailPath(member.id)}
-                        className="inline-flex min-h-11 items-center rounded-lg px-2 font-bold text-primary underline-offset-4 hover:underline"
-                      >
-                        {member.nickname}
-                      </Link>
-                    </Td>
-                    <Td className="text-muted-foreground">
-                      <p>{member.maskedEmail ?? '-'}</p>
-                      <p className="tabular-nums">{member.maskedPhone ?? '-'}</p>
-                    </Td>
-                    <Td>
-                      <Badge>{LOGIN_PROVIDER_LABEL[member.provider]}</Badge>
-                    </Td>
-                    <Td className="tabular-nums">{formatDate(member.joinedAt)}</Td>
-                    <Td className="tabular-nums">
-                      {stats.lastOrderAt ? formatDate(stats.lastOrderAt) : '주문 없음'}
-                    </Td>
-                    <Td className="text-right tabular-nums">{formatCount(stats.orderCount)}건</Td>
-                    <Td className="text-right whitespace-nowrap tabular-nums">
-                      {formatWon(stats.totalSpent)}
-                    </Td>
-                  </Tr>
-                );
-              })}
+              {members.map((member) => (
+                <Tr key={member.id}>
+                  <Td>
+                    <Link
+                      to={memberDetailPath(member.id)}
+                      className="inline-flex min-h-11 items-center rounded-lg px-2 font-bold text-primary underline-offset-4 hover:underline"
+                    >
+                      {member.nickname}
+                    </Link>
+                  </Td>
+                  <Td className="text-muted-foreground">
+                    <p>{member.maskedEmail ?? '-'}</p>
+                    <p className="tabular-nums">{member.maskedPhone ?? '-'}</p>
+                  </Td>
+                  <Td>
+                    <Badge>{loginProviderLabel(member.provider)}</Badge>
+                  </Td>
+                  <Td className="tabular-nums">{formatDate(member.joinedAt)}</Td>
+                  <Td className="tabular-nums">
+                    {member.lastOrderAt ? formatDate(member.lastOrderAt) : '주문 없음'}
+                  </Td>
+                  <Td className="text-right tabular-nums">{formatCount(member.orderCount)}건</Td>
+                  <Td className="text-right whitespace-nowrap tabular-nums">
+                    {formatWon(member.totalSpent)}
+                  </Td>
+                </Tr>
+              ))}
             </tbody>
           </DataTable>
+          <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
+            <Button
+              variant={BUTTON_VARIANT.OUTLINE}
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - MEMBER_PAGE_SIZE))}
+            >
+              이전
+            </Button>
+            <Button
+              variant={BUTTON_VARIANT.OUTLINE}
+              disabled={offset + MEMBER_PAGE_SIZE >= total}
+              onClick={() => setOffset(offset + MEMBER_PAGE_SIZE)}
+            >
+              다음
+            </Button>
+          </div>
         </QueryBoundary>
       </Card>
     </div>

@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useOrdersQuery } from '@/data/queries';
-import { EMPTY_ORDER_FILTERS, filterOrders, hasActiveFilters } from '@/domain/orderFilters';
+import { useAdminOrdersQuery } from '@/data/orderQueries';
+import {
+  EMPTY_ORDER_FILTERS,
+  FILTER_ALL,
+  filterOrders,
+  hasActiveFilters,
+} from '@/domain/orderFilters';
+import { ORDER_STATUS } from '@/domain/models';
 import { summarizeMenu } from '@/domain/summaries';
 import { Button, BUTTON_VARIANT } from '@/ui/Button';
 import { Card, CardBody } from '@/ui/Card';
@@ -11,11 +17,21 @@ import { DataTable, Td, Th, Tr } from '@/ui/Table';
 import { OrderDetailBody } from '@/shared/OrderDetailBody';
 import { OrderStatusBadge, OrderTypeBadge, PaymentStatusBadge } from '@/shared/badges';
 import { formatDateTime, formatWon } from '@/lib/format';
+import { AdminCancelDialog } from './AdminCancelDialog';
 import { OrderFiltersBar } from './OrderFiltersBar';
 
+/** Only these can still be cancelled by an admin (OQ-9); the server enforces it. */
+const CANCELLABLE: readonly string[] = [ORDER_STATUS.PAID, ORDER_STATUS.ACCEPTED];
+
 export function OrderHistoryPage() {
-  const orders = useOrdersQuery();
   const [filters, setFilters] = useState(EMPTY_ORDER_FILTERS);
+  // The server narrows by business date and status; search text, payment status and type are filtered here.
+  const orders = useAdminOrdersQuery({
+    fromDate: filters.dateFrom || undefined,
+    toDate: filters.dateTo || undefined,
+    status: filters.status === FILTER_ALL ? undefined : filters.status,
+  });
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   // Deep link from 회원관리: /admin/orders?order=<id> opens that order's detail.
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('order'));
@@ -103,12 +119,28 @@ export function OrderHistoryPage() {
         open={selected !== null}
         onClose={() => setSelectedId(null)}
         title={selected ? `주문 ${selected.orderNumber}` : '주문 상세'}
-        description="주문 상세 내용 (읽기 전용)"
+        description="주문 상세 내용"
         placement={DIALOG_PLACEMENT.RIGHT}
         widthClass="max-w-md"
+        footer={
+          selected && CANCELLABLE.includes(selected.status) ? (
+            <Button
+              variant={BUTTON_VARIANT.OUTLINE}
+              className="w-full border-destructive text-destructive"
+              onClick={() => setCancellingId(selected.id)}
+            >
+              주문 취소 / 환불
+            </Button>
+          ) : undefined
+        }
       >
         {selected ? <OrderDetailBody order={selected} /> : null}
       </Dialog>
+      <AdminCancelDialog
+        key={cancellingId ?? 'none'}
+        order={orders.data.find((order) => order.id === cancellingId) ?? null}
+        onClose={() => setCancellingId(null)}
+      />
     </div>
   );
 }

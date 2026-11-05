@@ -1,6 +1,9 @@
+import { useSaveStoreInfo } from '@theolive/api';
+import { storeInfoSchema } from '@theolive/validation';
 import { useState } from 'react';
 import { Store } from 'lucide-react';
-import { setStoreInfo } from '@/data/actions';
+import { useSupabase } from '@/auth/AuthContext';
+import { describeError } from '@/lib/errorMessage';
 import type { StoreInfo } from '@/domain/models';
 import { Button } from '@/ui/Button';
 import { Card, CardBody, CardHeader } from '@/ui/Card';
@@ -11,15 +14,19 @@ export function StoreInfoCard({ info }: { info: StoreInfo }) {
   const [draft, setDraft] = useState(info);
   const [error, setError] = useState<string | null>(null);
   const { notify } = useToast();
+  const saveInfo = useSaveStoreInfo(useSupabase());
 
   function save(): void {
-    if (draft.name.trim() === '') {
-      setError('매장 이름을 입력해 주세요.');
+    const parsed = storeInfoSchema.safeParse(draft);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? '입력한 내용을 확인해 주세요.');
       return;
     }
     setError(null);
-    setStoreInfo({ ...draft, name: draft.name.trim() });
-    notify('매장 정보를 저장했어요');
+    saveInfo.mutate(parsed.data, {
+      onSuccess: () => notify('매장 정보를 저장했어요'),
+      onError: (failure) => notify(describeError(failure)),
+    });
   }
 
   return (
@@ -57,7 +64,9 @@ export function StoreInfoCard({ info }: { info: StoreInfo }) {
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
           />
           <div>
-            <Button type="submit">저장</Button>
+            <Button type="submit" disabled={saveInfo.isPending}>
+              저장
+            </Button>
           </div>
         </form>
       </CardBody>

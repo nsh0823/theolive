@@ -1,50 +1,52 @@
+import { ORDER_REJECT_REASON, type OrderRejectReason } from '@theolive/types';
+import {
+  REJECT_REASON_MAX_LENGTH,
+  rejectOrderSchema,
+  type RejectOrderInput,
+} from '@theolive/validation';
 import { useState } from 'react';
 import { Button, BUTTON_SIZE, BUTTON_VARIANT } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { TextAreaField } from '@/ui/Fields';
 import { cn } from '@/lib/cn';
+import { REJECT_REASON_LABEL } from '@/domain/labels';
 import type { Order } from '@/domain/models';
 
-const REASON_OTHER = 'OTHER';
-
-// Reason list is a proposal: PRD 15-8 leaves the rejection reasons and refund handling open.
-export const REJECT_REASONS = [
-  { id: 'OUT_OF_STOCK', label: '재고 부족 (품절)' },
-  { id: 'CLOSED', label: '영업 종료' },
-  { id: 'BUSY', label: '매장 사정 (혼잡)' },
-  { id: REASON_OTHER, label: '기타 (직접 입력)' },
-] as const;
+const REJECT_REASONS = Object.values(ORDER_REJECT_REASON);
 
 type RejectDialogProps = {
   order: Order | null;
+  isBusy?: boolean;
   onCancel: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: (rejection: RejectOrderInput) => void;
 };
 
-export function RejectDialog({ order, onCancel, onConfirm }: RejectDialogProps) {
-  const [reasonId, setReasonId] = useState<string | null>(null);
+/** Reject needs a reason code (OQ-10); "기타" also needs written text. Validated with the shared schema. */
+export function RejectDialog({ order, isBusy = false, onCancel, onConfirm }: RejectDialogProps) {
+  const [reasonCode, setReasonCode] = useState<OrderRejectReason | null>(null);
   const [otherText, setOtherText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function reset(): void {
-    setReasonId(null);
+    setReasonCode(null);
     setOtherText('');
     setError(null);
   }
 
   function handleConfirm(): void {
-    const selected = REJECT_REASONS.find((reason) => reason.id === reasonId);
-    if (!selected) {
+    if (reasonCode === null) {
       setError('거절 사유를 선택해 주세요.');
       return;
     }
-    const finalReason = selected.id === REASON_OTHER ? otherText.trim() : selected.label;
-    if (finalReason === '') {
-      setError('기타 사유를 입력해 주세요.');
+    const parsed = rejectOrderSchema.safeParse({
+      reasonCode,
+      reason: reasonCode === ORDER_REJECT_REASON.OTHER ? otherText : '',
+    });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? '입력한 내용을 확인해 주세요.');
       return;
     }
-    onConfirm(finalReason);
-    reset();
+    onConfirm(parsed.data);
   }
 
   function handleCancel(): void {
@@ -57,14 +59,19 @@ export function RejectDialog({ order, onCancel, onConfirm }: RejectDialogProps) 
       open={order !== null}
       onClose={handleCancel}
       title={order ? `${order.orderNumber} 주문을 거절할까요?` : '주문 거절'}
-      description="거절하면 고객에게 사유가 안내되고 결제 취소·환불 절차가 진행됩니다. 되돌릴 수 없어요."
+      description="거절하면 고객에게 사유가 안내되고 결제 금액이 자동으로 환불됩니다. 되돌릴 수 없어요."
       widthClass="max-w-md"
       footer={
         <>
           <Button size={BUTTON_SIZE.LG} variant={BUTTON_VARIANT.OUTLINE} onClick={handleCancel}>
             취소
           </Button>
-          <Button size={BUTTON_SIZE.LG} variant={BUTTON_VARIANT.DANGER} onClick={handleConfirm}>
+          <Button
+            size={BUTTON_SIZE.LG}
+            variant={BUTTON_VARIANT.DANGER}
+            disabled={isBusy}
+            onClick={handleConfirm}
+          >
             주문 거절
           </Button>
         </>
@@ -72,36 +79,34 @@ export function RejectDialog({ order, onCancel, onConfirm }: RejectDialogProps) 
     >
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-semibold">거절 사유</legend>
-        {REJECT_REASONS.map((reason) => (
+        {REJECT_REASONS.map((code) => (
           <label
-            key={reason.id}
+            key={code}
             className={cn(
               'flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 text-base has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring',
-              reasonId === reason.id
-                ? 'border-primary bg-secondary font-semibold'
-                : 'border-border',
+              reasonCode === code ? 'border-primary bg-secondary font-semibold' : 'border-border',
             )}
           >
             <input
               type="radio"
               name="reject-reason"
-              value={reason.id}
-              checked={reasonId === reason.id}
+              value={code}
+              checked={reasonCode === code}
               onChange={() => {
-                setReasonId(reason.id);
+                setReasonCode(code);
                 setError(null);
               }}
               className="size-5 accent-primary"
             />
-            {reason.label}
+            {REJECT_REASON_LABEL[code]}
           </label>
         ))}
       </fieldset>
-      {reasonId === REASON_OTHER ? (
+      {reasonCode === ORDER_REJECT_REASON.OTHER ? (
         <TextAreaField
           label="기타 사유"
           value={otherText}
-          maxLength={100}
+          maxLength={REJECT_REASON_MAX_LENGTH}
           onChange={(event) => setOtherText(event.target.value)}
           wrapperClassName="mt-4"
         />

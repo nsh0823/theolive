@@ -3,7 +3,7 @@ import { Button, BUTTON_SIZE, BUTTON_VARIANT } from '@/ui/Button';
 
 type ConnectionBannerProps = { onReconnect: () => void };
 
-/** Realtime is not guaranteed (CLAUDE.md): on reconnect the board refetches pending orders. Visual stub only. */
+/** Realtime is not guaranteed (CLAUDE.md): while disconnected the board still refetches, and it refetches again on reconnect. */
 export function ConnectionBanner({ onReconnect }: ConnectionBannerProps) {
   return (
     <div
@@ -13,7 +13,7 @@ export function ConnectionBanner({ onReconnect }: ConnectionBannerProps) {
       <WifiOff className="size-5 shrink-0" aria-hidden="true" />
       <p className="min-w-0 flex-1 text-sm font-semibold">
         실시간 연결이 끊겼어요. 재연결을 시도하는 중이며, 새 주문이 늦게 보일 수 있어요. 연결되면
-        미처리 주문을 다시 불러옵니다.
+        미처리 주문을 자동으로 다시 불러옵니다.
       </p>
       <Button
         size={BUTTON_SIZE.LG}
@@ -21,7 +21,7 @@ export function ConnectionBanner({ onReconnect }: ConnectionBannerProps) {
         icon={<RefreshCw className="size-4" aria-hidden="true" />}
         onClick={onReconnect}
       >
-        지금 다시 연결
+        지금 새로고침
       </Button>
     </div>
   );

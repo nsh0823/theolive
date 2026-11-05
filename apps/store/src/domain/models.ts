@@ -36,13 +36,16 @@ export const PAYMENT_METHOD = {
   NAVER_PAY: 'NAVER_PAY',
   TOSS_PAY: 'TOSS_PAY',
   CARD: 'CARD',
+  /** Zero-amount order: nothing was charged (OQ-18). */
+  NONE: 'NONE',
 } as const;
 export type PaymentMethod = (typeof PAYMENT_METHOD)[keyof typeof PAYMENT_METHOD];
 
 export type OrderLine = {
   menuItemId: string;
   name: string;
-  temperature: Temperature;
+  /** `null` for items sold without a temperature choice. */
+  temperature: Temperature | null;
   quantity: number;
   unitPrice: number;
 };
@@ -61,137 +64,39 @@ export type Order = {
   note: string | null;
   menuAmount: number;
   couponDiscount: number;
+  /** Title of the Olive Stamp reward coupon applied to this order (snapshot), or `null`. */
+  couponTitle: string | null;
   pointsUsed: number;
   paidAmount: number;
   /** Owner of the order; `null` for guest or unknown. Used by Store Admin 회원관리. */
   memberId: string | null;
   /** Set when staff reject the order (PRD SW-03). */
   rejectReason: string | null;
-};
-
-export type MenuCategory = { id: string; name: string; isActive: boolean };
-
-export type MenuItem = {
-  id: string;
-  categoryId: string;
-  name: string;
-  description: string;
-  price: number;
-  /** HOT / ICE only (brief: no size, syrup, milk, or extra shot). */
-  temperatures: Temperature[];
-  isSoldOut: boolean;
-  /** `false` hides the item from customers entirely (판매 중지). */
-  isActive: boolean;
-};
-
-export type StoreStatus = {
-  isOpen: boolean;
-  isAcceptingOrders: boolean;
+  /** Why an order was cancelled (customer, admin or system), when known. */
+  cancelReason: string | null;
+  /** When the order was rejected or cancelled; `null` otherwise. Used to tell a stuck refund from a fresh one. */
+  endedAt: string | null;
 };
 
 export const WEEKDAY = { MON: 0, TUE: 1, WED: 2, THU: 3, FRI: 4, SAT: 5, SUN: 6 } as const;
-export type BusinessHours = {
-  weekday: number;
-  isClosed: boolean;
-  opensAt: string;
-  closesAt: string;
-};
 
-export type StoreInfo = { name: string; phone: string; address: string; description: string };
+// Menu and store settings come from the server through packages/api; these are its view types.
+export type {
+  BusinessHoursView as BusinessHours,
+  MenuCategoryView as MenuCategory,
+  MenuItemView as MenuItem,
+  NotificationSettingsView as NotificationSettings,
+  StoreInfoView as StoreInfo,
+  StoreStatusView as StoreStatus,
+} from '@theolive/api';
 
-export type NotificationSettings = {
-  newOrderSound: boolean;
-  newOrderBanner: boolean;
-  soldOutReminder: boolean;
-  dailySummary: boolean;
-};
-
-export const STAFF_PERMISSION = {
-  PROCESS_ORDERS: 'PROCESS_ORDERS',
-  MANAGE_OPERATIONS: 'MANAGE_OPERATIONS',
-} as const;
-export type StaffPermission = (typeof STAFF_PERMISSION)[keyof typeof STAFF_PERMISSION];
-
-export type StaffMember = {
-  id: string;
-  name: string;
-  email: string;
-  isActive: boolean;
-  permissions: StaffPermission[];
-};
+export { STAFF_PERMISSION, type StaffPermission } from '@theolive/types';
 
 export const NOTICE_STATUS = { PUBLISHED: 'PUBLISHED', UNPUBLISHED: 'UNPUBLISHED' } as const;
 export type NoticeStatus = (typeof NOTICE_STATUS)[keyof typeof NOTICE_STATUS];
 
-export type Notice = {
-  id: string;
-  title: string;
-  body: string;
-  status: NoticeStatus;
-  createdAt: string;
-  publishedAt: string | null;
-};
-
-/** Olive Stamps (PRD 5.5 A). Never share types or storage with Coupon Points. */
-export const STAMP_EARN_MODE = { PER_ORDER: 'PER_ORDER', PER_AMOUNT: 'PER_AMOUNT' } as const;
-export type StampEarnMode = (typeof STAMP_EARN_MODE)[keyof typeof STAMP_EARN_MODE];
-
-export const STAMP_EARN_TIMING = {
-  PAID: 'PAID',
-  ACCEPTED: 'ACCEPTED',
-  COMPLETED: 'COMPLETED',
-} as const;
-export type StampEarnTiming = (typeof STAMP_EARN_TIMING)[keyof typeof STAMP_EARN_TIMING];
-
-export type StampPolicy = {
-  earnMode: StampEarnMode;
-  /** Won spent per stamp; used only for PER_AMOUNT. */
-  amountPerStamp: number;
-  earnTiming: StampEarnTiming;
-};
-
-export type StampExchangeRule = {
-  id: string;
-  requiredStamps: number;
-  couponTitle: string;
-  validDays: number;
-  isActive: boolean;
-};
+// Olive Stamps (PRD 5.5 A). Never share types or storage with Coupon Points.
+export { STAMP_EARN_MODE, type StampEarnMode } from '@theolive/types';
 
 export const COUPON_STATUS = { AVAILABLE: 'AVAILABLE', USED: 'USED', EXPIRED: 'EXPIRED' } as const;
 export type CouponStatus = (typeof COUPON_STATUS)[keyof typeof COUPON_STATUS];
-
-export type IssuedCoupon = {
-  id: string;
-  title: string;
-  issuedAt: string;
-  expiresAt: string;
-  status: CouponStatus;
-};
-
-export type StampOverview = {
-  earnedThisMonth: number;
-  exchangedCoupons: number;
-  outstandingStamps: number;
-};
-
-/** Coupon Points (PRD 5.5 B): code-issued credit, spent like cash. Separate from stamps. */
-export const POINT_CODE_STATUS = {
-  UNUSED: 'UNUSED',
-  REGISTERED: 'REGISTERED',
-  EXHAUSTED: 'EXHAUSTED',
-  EXPIRED: 'EXPIRED',
-} as const;
-export type PointCodeStatus = (typeof POINT_CODE_STATUS)[keyof typeof POINT_CODE_STATUS];
-
-export type PointCode = {
-  id: string;
-  code: string;
-  amount: number;
-  remaining: number;
-  status: PointCodeStatus;
-  issuedAt: string;
-  expiresAt: string;
-  registeredAt: string | null;
-  memo: string;
-};

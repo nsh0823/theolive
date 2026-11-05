@@ -1,22 +1,47 @@
+import {
+  useCouponRules,
+  useSaveCouponRule,
+  useSetCouponRuleActive,
+  type CouponRuleView,
+} from '@theolive/api';
 import { useState } from 'react';
-import { Pencil, Plus, Repeat, Trash2 } from 'lucide-react';
-import { deleteExchangeRule, nextId, saveExchangeRule } from '@/data/actions';
-import { useExchangeRulesQuery } from '@/data/queries';
+import { Pencil, Plus, Power, Repeat } from 'lucide-react';
+import { useSupabase } from '@/auth/AuthContext';
+import { toBoundaryStatus } from '@/data/queryStatus';
+import { describeError } from '@/lib/errorMessage';
+import { formatWon } from '@/lib/format';
 import { Badge, BADGE_TONE } from '@/ui/Badge';
 import { Button, IconButton } from '@/ui/Button';
 import { Card, CardHeader } from '@/ui/Card';
-import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { QueryBoundary } from '@/ui/QueryBoundary';
 import { DataTable, Td, Th, Tr } from '@/ui/Table';
 import { useToast } from '@/ui/Toast';
-import type { StampExchangeRule } from '@/domain/models';
-import { ExchangeRuleDialog } from './ExchangeRuleDialog';
+import { ExchangeRuleDialog, type RuleTarget } from './ExchangeRuleDialog';
+
+function benefitText(rule: CouponRuleView): string {
+  if (rule.benefitType === 'FIXED_AMOUNT') return `${formatWon(rule.discountAmount ?? 0)} 할인`;
+  return rule.discountAmount ? `1개 무료 (최대 ${formatWon(rule.discountAmount)})` : '1개 무료';
+}
 
 export function ExchangeRulesCard() {
-  const rules = useExchangeRulesQuery();
+  const client = useSupabase();
+  const rules = useCouponRules(client);
+  const saveRule = useSaveCouponRule(client);
+  const setActive = useSetCouponRuleActive(client);
   const { notify } = useToast();
-  const [target, setTarget] = useState<StampExchangeRule | 'new' | null>(null);
-  const [deleting, setDeleting] = useState<StampExchangeRule | null>(null);
+  const [target, setTarget] = useState<RuleTarget | null>(null);
+  const list = rules.data ?? [];
+
+  function toggle(rule: CouponRuleView): void {
+    setActive.mutate(
+      { id: rule.id, isActive: !rule.isActive },
+      {
+        onSuccess: () =>
+          notify(rule.isActive ? '교환 규칙을 중지했어요' : '교환 규칙을 다시 켰어요'),
+        onError: (failure) => notify(describeError(failure)),
+      },
+    );
+  }
 
   return (
     <Card>
@@ -33,9 +58,9 @@ export function ExchangeRulesCard() {
         }
       />
       <QueryBoundary
-        status={rules.status}
-        isEmpty={rules.data.length === 0}
-        onRetry={rules.refetch}
+        status={toBoundaryStatus(rules.status)}
+        isEmpty={list.length === 0}
+        onRetry={() => void rules.refetch()}
         emptyTitle="교환 규칙이 없어요"
         emptyDescription="스탬프를 쿠폰으로 바꿔줄 규칙을 추가해 보세요."
       >
@@ -44,6 +69,7 @@ export function ExchangeRulesCard() {
             <tr>
               <Th>필요 스탬프</Th>
               <Th>교환 쿠폰</Th>
+              <Th>혜택</Th>
               <Th>유효기간</Th>
               <Th>상태</Th>
               <Th>
@@ -52,10 +78,11 @@ export function ExchangeRulesCard() {
             </tr>
           </thead>
           <tbody>
-            {rules.data.map((rule) => (
+            {list.map((rule) => (
               <Tr key={rule.id}>
                 <Td className="text-base font-bold tabular-nums">{rule.requiredStamps}개</Td>
-                <Td>{rule.couponTitle}</Td>
+                <Td>{rule.title}</Td>
+                <Td>{benefitText(rule)}</Td>
                 <Td className="tabular-nums">{rule.validDays}일</Td>
                 <Td>
                   <Badge tone={rule.isActive ? BADGE_TONE.PRIMARY : BADGE_TONE.NEUTRAL}>
@@ -65,18 +92,18 @@ export function ExchangeRulesCard() {
                 <Td>
                   <span className="flex">
                     <IconButton
-                      label={`${rule.requiredStamps}개 교환 규칙 수정`}
+                      label={`${rule.title} 수정`}
                       className="size-11"
                       onClick={() => setTarget(rule)}
                     >
                       <Pencil className="size-4" aria-hidden="true" />
                     </IconButton>
                     <IconButton
-                      label={`${rule.requiredStamps}개 교환 규칙 삭제`}
+                      label={`${rule.title} ${rule.isActive ? '중지' : '다시 켜기'}`}
                       className="size-11"
-                      onClick={() => setDeleting(rule)}
+                      onClick={() => toggle(rule)}
                     >
-                      <Trash2 className="size-4" aria-hidden="true" />
+                      <Power className="size-4" aria-hidden="true" />
                     </IconButton>
                   </span>
                 </Td>
@@ -87,24 +114,19 @@ export function ExchangeRulesCard() {
       </QueryBoundary>
       <ExchangeRuleDialog
         target={target}
+        isSaving={saveRule.isPending}
         onClose={() => setTarget(null)}
         onSave={(values, existing) => {
-          saveExchangeRule({ ...values, id: existing?.id ?? nextId('rule') });
-          notify('교환 규칙을 저장했어요');
-          setTarget(null);
-        }}
-      />
-      <ConfirmDialog
-        open={deleting !== null}
-        title="교환 규칙을 삭제할까요?"
-        description="이미 발급된 쿠폰에는 영향이 없고, 이후 교환만 막혀요."
-        confirmLabel="삭제"
-        isDestructive
-        onCancel={() => setDeleting(null)}
-        onConfirm={() => {
-          if (deleting) deleteExchangeRule(deleting.id);
-          setDeleting(null);
-          notify('교환 규칙을 삭제했어요');
+          saveRule.mutate(
+            { ...values, id: existing?.id ?? null },
+            {
+              onSuccess: () => {
+                notify('교환 규칙을 저장했어요');
+                setTarget(null);
+              },
+              onError: (failure) => notify(describeError(failure)),
+            },
+          );
         }}
       />
     </Card>

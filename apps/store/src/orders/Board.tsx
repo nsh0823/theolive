@@ -17,6 +17,7 @@ type BoardProps = {
   nowMs: number;
   onSelect: (order: Order) => void;
   onAction: (order: Order, action: StaffAction) => void;
+  isBusy?: boolean;
 };
 
 function ordersFor(orders: Order[], status: OrderStatus): Order[] {
@@ -27,7 +28,7 @@ function ordersFor(orders: Order[], status: OrderStatus): Order[] {
 }
 
 /** Four status columns, left to right in the order of the workflow. Scrolls sideways on narrow screens. */
-export function Board({ orders, nowMs, onSelect, onAction }: BoardProps) {
+export function Board({ orders, nowMs, onSelect, onAction, isBusy = false }: BoardProps) {
   return (
     <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto px-4 pb-4 sm:px-6 sm:pb-6">
       {BOARD_STATUSES.map((status) => {
@@ -76,6 +77,7 @@ export function Board({ orders, nowMs, onSelect, onAction }: BoardProps) {
                     nowMs={nowMs}
                     onSelect={onSelect}
                     onAction={onAction}
+                    isBusy={isBusy}
                   />
                 ))
               )}

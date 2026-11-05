@@ -12,6 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.106.0",
+    "@theolive/api": "workspace:*",
+    "@theolive/types": "workspace:*",
+    "@theolive/validation": "workspace:*",
     "lucide-react": "^1.68.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

@@ -1,6 +1,6 @@
 import { UserRound } from 'lucide-react';
-import { LOGIN_PROVIDER_LABEL } from '@/domain/labels';
-import type { Member, MemberStats } from '@/domain/memberModels';
+import type { MemberView } from '@theolive/api';
+import { loginProviderLabel } from '@/domain/labels';
 import { Card, CardHeader, StatFigure, StatRow } from '@/ui/Card';
 import { formatCount, formatDate, formatWon } from '@/lib/format';
 
@@ -13,7 +13,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MemberProfileCard({ member, stats }: { member: Member; stats: MemberStats }) {
+export function MemberProfileCard({ member }: { member: MemberView }) {
   return (
     <Card>
       <CardHeader
@@ -23,16 +23,16 @@ export function MemberProfileCard({ member, stats }: { member: Member; stats: Me
       <dl className="divide-y divide-border px-5">
         <Row label="이메일" value={member.maskedEmail ?? '-'} />
         <Row label="휴대전화" value={member.maskedPhone ?? '-'} />
-        <Row label="가입 경로" value={LOGIN_PROVIDER_LABEL[member.provider]} />
+        <Row label="가입 경로" value={loginProviderLabel(member.provider)} />
         <Row label="가입일" value={formatDate(member.joinedAt)} />
         <Row
           label="최근 주문일"
-          value={stats.lastOrderAt ? formatDate(stats.lastOrderAt) : '주문 없음'}
+          value={member.lastOrderAt ? formatDate(member.lastOrderAt) : '주문 없음'}
         />
       </dl>
       <StatRow>
-        <StatFigure value={`${formatCount(stats.orderCount)}건`} label="주문 수" />
-        <StatFigure value={formatWon(stats.totalSpent)} label="누적 결제" />
+        <StatFigure value={`${formatCount(member.orderCount)}건`} label="주문 수" />
+        <StatFigure value={formatWon(member.totalSpent)} label="누적 결제" />
       </StatRow>
     </Card>
   );

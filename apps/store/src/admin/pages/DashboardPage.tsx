@@ -1,16 +1,19 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { BarChart3, Coins, Flame, ReceiptText, Store, TrendingUp } from 'lucide-react';
-import { useOrdersQuery, useStoreStatus } from '@/data/queries';
-import { PRIOR_DAILY_SALES } from '@/data/fixtures/admin';
-import { buildDailySales, rankPopularItems, summarizeDay, summarizeMenu } from '@/domain/summaries';
+import { usePopularItems, useSalesSummary, useStoreStatus } from '@theolive/api';
+import { useSupabase } from '@/auth/AuthContext';
+import { useAdminOrdersQuery } from '@/data/orderQueries';
+import { toBoundaryStatus } from '@/data/queryStatus';
+import { lastBusinessDays } from '@/domain/businessDays';
+import { summarizeMenu, toSalesPoints } from '@/domain/summaries';
 import { Badge, BADGE_TONE } from '@/ui/Badge';
 import { BUTTON_VARIANT, buttonClasses } from '@/ui/Button';
 import { Card, CardBody, CardHeader, StatFigure } from '@/ui/Card';
 import { QueryBoundary } from '@/ui/QueryBoundary';
 import { DataTable, Td, Th, Tr } from '@/ui/Table';
 import { OrderStatusBadge } from '@/shared/badges';
-import { formatCount, formatTime, formatWon, toDateInputValue } from '@/lib/format';
+import { formatCount, formatTime, formatWon } from '@/lib/format';
 import { ROUTES } from '@/lib/routes';
 import { MS_PER_MINUTE } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
@@ -47,22 +50,27 @@ function SummaryCard({
 }
 
 export function DashboardPage() {
-  const orders = useOrdersQuery();
-  const status = useStoreStatus();
+  const client = useSupabase();
+  const orders = useAdminOrdersQuery({});
+  const storeStatus = useStoreStatus(client);
+  const status = storeStatus.data ?? null;
   const nowMs = useNow(DASHBOARD_TICK_MS);
-  const today = summarizeDay(orders.data, toDateInputValue(new Date(nowMs).toISOString()));
-  const popular = rankPopularItems(orders.data, POPULAR_LIMIT);
-  const recent = [...orders.data]
-    .sort((a, b) => b.placedAt.localeCompare(a.placedAt))
-    .slice(0, RECENT_ORDER_LIMIT);
-  const sales = buildDailySales(PRIOR_DAILY_SALES, today.sales, nowMs);
+  const { from, to } = lastBusinessDays(nowMs);
+  const summary = useSalesSummary(client, from, to);
+  const popularQuery = usePopularItems(client, from, to, POPULAR_LIMIT);
+  const days = summary.data?.days ?? [];
+  const today = days.at(-1) ?? { date: to, sales: 0, orderCount: 0 };
+  const todayAverage = today.orderCount === 0 ? 0 : Math.round(today.sales / today.orderCount);
+  const popular = popularQuery.data ?? [];
+  const recent = orders.data.slice(0, RECENT_ORDER_LIMIT);
+  const sales = toSalesPoints(days);
   const top = popular[0];
 
   return (
     <QueryBoundary
-      status={orders.status}
-      isEmpty={orders.data.length === 0}
-      onRetry={orders.refetch}
+      status={toBoundaryStatus(summary.status)}
+      isEmpty={(summary.data?.orderCount ?? 0) === 0 && orders.data.length === 0}
+      onRetry={() => void summary.refetch()}
       emptyTitle="아직 집계할 주문이 없어요"
       emptyDescription="첫 주문이 들어오면 오늘의 매출이 이곳에 표시돼요."
       loadingLabel="대시보드를 불러오는 중이에요"
@@ -73,25 +81,25 @@ export function DashboardPage() {
             icon={<Coins className="size-5" />}
             title="오늘 매출"
             value={formatWon(today.sales)}
-            label="결제 완료 기준"
+            label="결제 완료 기준 · 환불 제외"
           />
           <SummaryCard
             icon={<ReceiptText className="size-5" />}
             title="오늘 주문 수"
             value={`${formatCount(today.orderCount)}건`}
-            label="거절·취소 제외"
+            label="거절·취소·미결제 제외"
           />
           <SummaryCard
             icon={<TrendingUp className="size-5" />}
             title="평균 주문 금액"
-            value={formatWon(today.averageAmount)}
+            value={formatWon(todayAverage)}
             label="오늘 주문 기준"
           />
           <SummaryCard
             icon={<Flame className="size-5" />}
             title="인기 메뉴"
             value={top?.name ?? '-'}
-            label={top ? `최근 판매 ${top.quantity}개` : '집계 데이터 없음'}
+            label={top ? `최근 7일 ${top.quantity}개` : '집계 데이터 없음'}
           />
         </div>
 
@@ -107,15 +115,27 @@ export function DashboardPage() {
             <CardBody className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">영업 상태</span>
-                <Badge tone={status.isOpen ? BADGE_TONE.PRIMARY : BADGE_TONE.DANGER}>
-                  {status.isOpen ? '영업 중' : '영업 종료'}
-                </Badge>
+                {status ? (
+                  <Badge tone={status.isOpen ? BADGE_TONE.PRIMARY : BADGE_TONE.DANGER}>
+                    {status.isOpen ? '영업 중' : '영업 종료'}
+                  </Badge>
+                ) : (
+                  <Badge tone={BADGE_TONE.NEUTRAL}>
+                    {storeStatus.isError ? '불러오지 못했어요' : '확인 중'}
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">주문 접수</span>
-                <Badge tone={status.isAcceptingOrders ? BADGE_TONE.SAGE : BADGE_TONE.WARNING}>
-                  {status.isAcceptingOrders ? '접수 가능' : '일시 중지'}
-                </Badge>
+                {status ? (
+                  <Badge tone={status.isAcceptingOrders ? BADGE_TONE.SAGE : BADGE_TONE.WARNING}>
+                    {status.isAcceptingOrders ? '접수 가능' : '일시 중지'}
+                  </Badge>
+                ) : (
+                  <Badge tone={BADGE_TONE.NEUTRAL}>
+                    {storeStatus.isError ? '불러오지 못했어요' : '확인 중'}
+                  </Badge>
+                )}
               </div>
               <Link
                 to={ROUTES.ADMIN_SETTINGS}
@@ -168,6 +188,11 @@ export function DashboardPage() {
           </Card>
           <Card>
             <CardHeader icon={<Flame className="size-5" />} title="인기 메뉴 순위" />
+            {popular.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-muted-foreground">
+                {popularQuery.isError ? '인기 메뉴를 불러오지 못했어요.' : '집계된 판매가 없어요.'}
+              </p>
+            ) : null}
             <ol className="divide-y divide-border px-5">
               {popular.map((item, index) => (
                 <li key={item.name} className="flex items-center gap-3 py-3">

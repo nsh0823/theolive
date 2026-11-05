@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AlertTriangle, Inbox, RefreshCw } from 'lucide-react';
-import { QUERY_STATUS, type QueryStatus } from '@/data/useFixtureQuery';
+import { QUERY_STATUS, type QueryStatus } from '@/data/queryStatus';
 import { Button, BUTTON_VARIANT } from './Button';
 
 type QueryBoundaryProps = {

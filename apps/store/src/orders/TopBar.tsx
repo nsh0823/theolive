@@ -5,22 +5,28 @@ import { cn } from '@/lib/cn';
 import { Button, BUTTON_SIZE, BUTTON_VARIANT } from '@/ui/Button';
 import type { StoreStatus } from '@/domain/models';
 
-export function describeStoreStatus(status: StoreStatus): {
+/** `null` while the status is loading or failed to load: never show a state we cannot trust. */
+export function describeStoreStatus(status: StoreStatus | null): {
   label: string;
   tone: 'primary' | 'warning' | 'danger';
 } {
+  if (status === null) return { label: '매장 상태 확인 필요', tone: 'warning' };
   if (!status.isOpen) return { label: '영업 종료', tone: 'danger' };
   if (!status.isAcceptingOrders) return { label: '영업 중 · 접수 일시 중지', tone: 'warning' };
   return { label: '영업 중 · 접수 가능', tone: 'primary' };
 }
 
+const NO_OPERATIONS_PERMISSION = '품절·운영 설정 권한이 없어요';
+
 type TopBarProps = {
-  status: StoreStatus;
+  status: StoreStatus | null;
   /** `null` while orders are loading or failed: never show a count we cannot trust. */
   newOrderCount: number | null;
   soldOutCount: number;
   isSoundOn: boolean;
   isConnected: boolean;
+  /** MANAGE_OPERATIONS: store status and sold-out controls. UX only; the server enforces it. */
+  canManageOperations: boolean;
   onToggleSound: () => void;
   onOpenStatus: () => void;
   onOpenSoldOut: () => void;
@@ -33,6 +39,7 @@ export function TopBar({
   soldOutCount,
   isSoundOn,
   isConnected,
+  canManageOperations,
   onToggleSound,
   onOpenStatus,
   onOpenSoldOut,
@@ -53,6 +60,8 @@ export function TopBar({
         variant={BUTTON_VARIANT.OUTLINE}
         size={BUTTON_SIZE.LG}
         onClick={onOpenStatus}
+        disabled={!canManageOperations}
+        title={canManageOperations ? undefined : NO_OPERATIONS_PERMISSION}
         aria-label={`매장 상태: ${label}. 빠른 설정 열기`}
       >
         <span
@@ -111,6 +120,8 @@ export function TopBar({
           variant={BUTTON_VARIANT.SECONDARY}
           size={BUTTON_SIZE.LG}
           onClick={onOpenSoldOut}
+          disabled={!canManageOperations}
+          title={canManageOperations ? undefined : NO_OPERATIONS_PERMISSION}
           icon={<PackageX className="size-5" aria-hidden="true" />}
         >
           품절 관리{soldOutCount > 0 ? ` (${soldOutCount})` : ''}

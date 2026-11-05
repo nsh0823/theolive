@@ -1,53 +1,70 @@
+import type { CouponRuleView } from '@theolive/api';
+import {
+  COUPON_DISCOUNT_MAX,
+  COUPON_REQUIRED_STAMPS_MAX,
+  COUPON_TITLE_MAX_LENGTH,
+  COUPON_VALID_DAYS_MAX,
+  exchangeRuleSchema,
+  type ExchangeRuleInput,
+} from '@theolive/validation';
 import { useState } from 'react';
 import { Button, BUTTON_VARIANT } from '@/ui/Button';
 import { Dialog } from '@/ui/Dialog';
 import { TextField } from '@/ui/Fields';
-import { Switch } from '@/ui/Switch';
-import {
-  COUPON_TITLE_MAX_LENGTH,
-  validateExchangeRule,
-  type ExchangeRuleErrors,
-} from '@/domain/exchangeRule';
-import type { StampExchangeRule } from '@/domain/models';
+
+export type RuleTarget = CouponRuleView | 'new';
 
 type Props = {
-  target: StampExchangeRule | 'new' | null;
+  target: RuleTarget | null;
+  isSaving: boolean;
   onClose: () => void;
-  onSave: (
-    values: { requiredStamps: number; couponTitle: string; validDays: number; isActive: boolean },
-    existing: StampExchangeRule | null,
-  ) => void;
+  onSave: (values: ExchangeRuleInput, existing: CouponRuleView | null) => void;
 };
 
-const DEFAULT_VALID_DAYS = 90;
+type Field = 'title' | 'requiredStamps' | 'validDays' | 'discountAmount';
+type Errors = Partial<Record<Field, string>>;
 
-function Form({ target, onClose, onSave }: Props & { target: StampExchangeRule | 'new' }) {
+const DEFAULT_VALID_DAYS = 90;
+const FIELD_MESSAGE: Record<Field, string> = {
+  title: `쿠폰 이름을 ${COUPON_TITLE_MAX_LENGTH}자 이내로 입력해 주세요.`,
+  requiredStamps: `1~${COUPON_REQUIRED_STAMPS_MAX} 사이의 숫자로 입력해 주세요.`,
+  validDays: `1~${COUPON_VALID_DAYS_MAX}일 사이로 입력해 주세요.`,
+  discountAmount: `1~${COUPON_DISCOUNT_MAX.toLocaleString('ko-KR')}원 사이로 입력해 주세요.`,
+};
+
+function isField(value: unknown): value is Field {
+  return typeof value === 'string' && value in FIELD_MESSAGE;
+}
+
+function Form({ target, isSaving, onClose, onSave }: Props & { target: RuleTarget }) {
   const existing = target === 'new' ? null : target;
+  // Editing keeps the benefit type and eligible items; new rules give one free item up to the cap.
+  const benefitType = existing?.benefitType ?? 'FREE_ITEM';
+  const isFixed = benefitType === 'FIXED_AMOUNT';
   const [required, setRequired] = useState(existing ? String(existing.requiredStamps) : '');
-  const [title, setTitle] = useState(existing?.couponTitle ?? '');
+  const [title, setTitle] = useState(existing?.title ?? '');
   const [days, setDays] = useState(String(existing?.validDays ?? DEFAULT_VALID_DAYS));
-  const [isActive, setIsActive] = useState(existing?.isActive ?? true);
-  const [errors, setErrors] = useState<ExchangeRuleErrors>({});
+  const [cap, setCap] = useState(existing?.discountAmount ? String(existing.discountAmount) : '');
+  const [errors, setErrors] = useState<Errors>({});
 
   function submit(): void {
-    const result = validateExchangeRule({
-      requiredText: required,
-      couponTitle: title,
-      validDaysText: days,
+    const parsed = exchangeRuleSchema.safeParse({
+      title,
+      requiredStamps: Number(required),
+      validDays: Number(days),
+      benefitType,
+      discountAmount: cap.trim() === '' ? null : Number(cap),
     });
-    if (!result.ok) {
-      setErrors(result.errors);
+    if (!parsed.success) {
+      const next: Errors = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if (isField(field)) next[field] = FIELD_MESSAGE[field];
+      }
+      setErrors(next);
       return;
     }
-    onSave(
-      {
-        requiredStamps: result.requiredStamps,
-        couponTitle: result.couponTitle,
-        validDays: result.validDays,
-        isActive,
-      },
-      existing,
-    );
+    onSave(parsed.data, existing);
   }
 
   return (
@@ -55,13 +72,15 @@ function Form({ target, onClose, onSave }: Props & { target: StampExchangeRule |
       open
       onClose={onClose}
       title={existing ? '교환 규칙 수정' : '교환 규칙 추가'}
-      description="올리브 스탬프를 쿠폰으로 교환하는 조건이에요."
+      description="올리브 스탬프를 쿠폰으로 교환하는 조건이에요. 이미 발급된 쿠폰은 바뀌지 않아요."
       footer={
         <>
           <Button variant={BUTTON_VARIANT.OUTLINE} onClick={onClose}>
             취소
           </Button>
-          <Button onClick={submit}>저장</Button>
+          <Button onClick={submit} disabled={isSaving}>
+            저장
+          </Button>
         </>
       }
     >
@@ -78,7 +97,7 @@ function Form({ target, onClose, onSave }: Props & { target: StampExchangeRule |
           data-autofocus
           inputMode="numeric"
           value={required}
-          error={errors.required}
+          error={errors.requiredStamps}
           onChange={(e) => setRequired(e.target.value)}
         />
         <TextField
@@ -93,13 +112,20 @@ function Form({ target, onClose, onSave }: Props & { target: StampExchangeRule |
           inputMode="numeric"
           value={days}
           error={errors.validDays}
-          hint="유효기간 정책은 확정 전이에요 (PRD 15-3)."
           onChange={(e) => setDays(e.target.value)}
         />
-        <div className="flex items-center justify-between rounded-xl border border-border px-4">
-          <p className="py-2 text-sm font-semibold">교환 가능</p>
-          <Switch checked={isActive} onChange={setIsActive} label="교환 가능" />
-        </div>
+        <TextField
+          label={isFixed ? '할인 금액 (원)' : '최대 할인 금액 (원, 선택)'}
+          inputMode="numeric"
+          value={cap}
+          error={errors.discountAmount}
+          hint={
+            isFixed
+              ? '주문 금액에서 이 금액만큼 빼요.'
+              : '비워 두면 가장 비싼 해당 메뉴 1개 값만큼 무료예요. 입력하면 그 금액까지만 무료예요.'
+          }
+          onChange={(e) => setCap(e.target.value)}
+        />
       </form>
     </Dialog>
   );

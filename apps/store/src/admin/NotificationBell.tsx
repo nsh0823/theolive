@@ -1,17 +1,18 @@
+import { useMenuItems } from '@theolive/api';
 import { Link } from 'react-router';
 import { Bell } from 'lucide-react';
 import { PopoverMenu } from '@/ui/PopoverMenu';
-import { useStoreValue } from '@/data/createStore';
-import { menuStore, ordersStore } from '@/data/stores';
+import { useSupabase } from '@/auth/AuthContext';
+import { useBoardOrdersQuery } from '@/data/orderQueries';
 import { ORDER_STATUS } from '@/domain/models';
 import { ROUTES } from '@/lib/routes';
 
-/** Header bell: summarizes what needs attention, derived from current fixture state. */
+/** Header bell: summarizes what needs attention (new paid orders and sold-out items), both from the server. */
 export function NotificationBell() {
-  const orders = useStoreValue(ordersStore);
-  const menu = useStoreValue(menuStore);
+  const orders = useBoardOrdersQuery().data;
+  const menu = useMenuItems(useSupabase());
   const newOrders = orders.filter((order) => order.status === ORDER_STATUS.PAID).length;
-  const soldOut = menu.filter((item) => item.isSoldOut).length;
+  const soldOut = (menu.data ?? []).filter((item) => item.isSoldOut).length;
   const total = (newOrders > 0 ? 1 : 0) + (soldOut > 0 ? 1 : 0);
 
   return (

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { createOrders } from '@/data/fixtures/orders';
+import { createOrders } from '@/test/orderFactory';
 import { ORDER_STATUS, type Order } from '@/domain/models';
 import { STAFF_ACTION } from '@/domain/orderTransitions';
 import { OrderCard } from './OrderCard';
@@ -67,5 +67,13 @@ describe('OrderCard', () => {
     const done = orderWithStatus(ORDER_STATUS.COMPLETED);
     render(<OrderCard order={done} nowMs={NOW} onSelect={vi.fn()} onAction={vi.fn()} />);
     expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+});
+
+describe('OrderCard while an action is being sent', () => {
+  it('disables the quick action so a double tap cannot repeat it', () => {
+    const order = orderWithStatus(ORDER_STATUS.PAID);
+    render(<OrderCard order={order} nowMs={NOW} onSelect={vi.fn()} onAction={vi.fn()} isBusy />);
+    expect(screen.getByRole('button', { name: `${order.orderNumber} 접수하기` })).toBeDisabled();
   });
 });

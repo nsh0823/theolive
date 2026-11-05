@@ -85,7 +85,8 @@ export function OrderTypeBadge({ type }: { type: OrderType }) {
   );
 }
 
-export function TemperatureBadge({ temperature }: { temperature: Temperature }) {
+export function TemperatureBadge({ temperature }: { temperature: Temperature | null }) {
+  if (temperature === null) return null;
   const isHot = temperature === TEMPERATURE.HOT;
   const Icon = isHot ? Flame : Snowflake;
   return (

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { createOrders } from '@/data/fixtures/orders';
+import { createOrders } from '@/test/orderFactory';
 import { RejectDialog } from './RejectDialog';
 
 const order = createOrders()[0];
@@ -31,7 +31,7 @@ describe('RejectDialog', () => {
     render(<RejectDialog order={order} onCancel={vi.fn()} onConfirm={onConfirm} />);
     await userEvent.click(screen.getByRole('radio', { name: '재고 부족 (품절)' }));
     await userEvent.click(screen.getByRole('button', { name: '주문 거절' }));
-    expect(onConfirm).toHaveBeenCalledWith('재고 부족 (품절)');
+    expect(onConfirm).toHaveBeenCalledWith({ reasonCode: 'SOLD_OUT', reason: '' });
   });
 
   it('needs text for the "other" reason', async () => {
@@ -42,7 +42,7 @@ describe('RejectDialog', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('기타 사유를 입력해 주세요');
     await userEvent.type(screen.getByLabelText('기타 사유'), '  기계 점검  ');
     await userEvent.click(screen.getByRole('button', { name: '주문 거절' }));
-    expect(onConfirm).toHaveBeenCalledWith('기계 점검');
+    expect(onConfirm).toHaveBeenCalledWith({ reasonCode: 'OTHER', reason: '기계 점검' });
   });
 
   it('cancels with the button and with Escape, and traps Tab inside the dialog', async () => {

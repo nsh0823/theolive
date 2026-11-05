@@ -5,6 +5,7 @@ import { Dialog } from '@/ui/Dialog';
 import { SelectField, TextAreaField, TextField } from '@/ui/Fields';
 import { Switch } from '@/ui/Switch';
 import { cn } from '@/lib/cn';
+import { MenuImageField, type MenuImageChange } from './MenuImageField';
 import {
   MENU_DESCRIPTION_MAX_LENGTH,
   MENU_NAME_MAX_LENGTH,
@@ -21,18 +22,21 @@ type MenuFormDialogProps = {
   target: MenuItem | 'new' | null;
   categories: MenuCategory[];
   onClose: () => void;
-  onSave: (fields: MenuFormFields, existing: MenuItem | null) => void;
+  isSaving?: boolean;
+  onSave: (fields: MenuFormFields, existing: MenuItem | null, image: MenuImageChange) => void;
 };
 
 /** The dialog body is remounted per target (via `key`) so form state always starts fresh. */
 function MenuForm({
   target,
   categories,
+  isSaving = false,
   onClose,
   onSave,
 }: Omit<MenuFormDialogProps, 'target'> & { target: MenuItem | 'new' }) {
   const [values, setValues] = useState(() => initialMenuFormValues(target, categories));
   const [errors, setErrors] = useState<MenuFormErrors>({});
+  const [image, setImage] = useState<MenuImageChange>({ file: null, isRemoved: false });
   const existing = target === 'new' ? null : target;
 
   function toggleTemperature(temperature: Temperature): void {
@@ -45,12 +49,13 @@ function MenuForm({
   }
 
   function submit(): void {
+    if (isSaving) return;
     const result = validateMenuForm(values);
     if (!result.ok) {
       setErrors(result.errors);
       return;
     }
-    onSave(result.fields, existing);
+    onSave(result.fields, existing, image);
   }
 
   return (
@@ -65,7 +70,9 @@ function MenuForm({
           <Button variant={BUTTON_VARIANT.OUTLINE} onClick={onClose}>
             취소
           </Button>
-          <Button onClick={submit}>{existing ? '저장' : '추가'}</Button>
+          <Button onClick={submit} disabled={isSaving}>
+            {existing ? '저장' : '추가'}
+          </Button>
         </>
       }
     >
@@ -115,6 +122,7 @@ function MenuForm({
           error={errors.description}
           onChange={(e) => setValues({ ...values, description: e.target.value })}
         />
+        <MenuImageField currentUrl={existing?.imageUrl ?? null} onChange={setImage} />
         <fieldset>
           <legend className="mb-1.5 text-sm font-semibold">온도 옵션 (HOT / ICE)</legend>
           <div className="flex gap-2">
@@ -142,6 +150,9 @@ function MenuForm({
               );
             })}
           </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            아무것도 선택하지 않으면 온도를 고를 수 없는 메뉴예요 (예: 병 음료, 디저트).
+          </p>
           {errors.temperatures ? (
             <p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
               {errors.temperatures}
