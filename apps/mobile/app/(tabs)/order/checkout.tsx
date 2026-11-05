@@ -1,15 +1,13 @@
-import { Heading } from '@theolive/ui/components/heading';
-import { Text } from '@theolive/ui/components/text';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { View } from 'react-native';
 
 import { AmountSummary } from '@/components/order/AmountSummary';
 import { CouponPicker, PointToggle } from '@/components/order/CheckoutOptions';
 import { OrderLinesCard } from '@/components/order/OrderLinesCard';
+import { PaymentMethodPicker } from '@/components/order/PaymentMethodPicker';
 import { PaymentStatusView, type PaymentPhase } from '@/components/order/PaymentStatusView';
-import { Card } from '@/components/ui/Card';
 import { CtaButton } from '@/components/ui/CtaButton';
+import { FormSection } from '@/components/ui/FormSection';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
 import { submitFixtureOrder } from '@/fixtures/actions';
@@ -17,7 +15,7 @@ import { useCouponsQuery, useMenuQuery, usePointsQuery } from '@/fixtures/querie
 import { displaySubtotal, joinCartLines, previewCheckoutAmounts } from '@/lib/displayTotals';
 import { formatWon } from '@/lib/format';
 import { combineStates } from '@/lib/queryState';
-import type { Coupon, MenuItem, PointSummary } from '@/models';
+import type { Coupon, MenuItem, PaymentMethod, PointSummary } from '@/models';
 import { useCartStore } from '@/store/useCartStore';
 
 type Props = { menu: MenuItem[]; coupons: Coupon[]; points: PointSummary };
@@ -27,6 +25,7 @@ function Checkout({ menu, coupons, points }: Props) {
   const { lines, orderType } = useCartStore();
   const [couponId, setCouponId] = useState<string | null>(null);
   const [usePoints, setUsePoints] = useState(false);
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [phase, setPhase] = useState<PaymentPhase>('idle');
   // Guards double taps; a real implementation also sends an idempotency key (PAY-07).
   const inFlight = useRef(false);
@@ -69,37 +68,26 @@ function Checkout({ menu, coupons, points }: Props) {
         <CtaButton
           label={`${formatWon(amounts.finalAmount)} 결제하기`}
           onPress={pay}
-          isDisabled={entries.length === 0}
+          isDisabled={entries.length === 0 || method === null}
+          accessibilityHint={method === null ? '결제수단을 먼저 선택해 주세요' : undefined}
         />
       }
     >
-      <View className="gap-2">
-        <Heading size="sm" accessibilityRole="header">
-          주문 내역
-        </Heading>
+      <FormSection title="주문 내역">
         <OrderLinesCard
           orderType={orderType}
           lines={entries.map(({ line, item }) => ({
+            menuItemId: item.id,
             name: item.name,
             temperature: line.temperature,
             quantity: line.quantity,
             unitPrice: item.price,
           }))}
         />
-      </View>
+      </FormSection>
       <CouponPicker coupons={coupons} selectedId={couponId} onSelect={setCouponId} />
       <PointToggle balance={points.balance} enabled={usePoints} onChange={setUsePoints} />
-      <View className="gap-2">
-        <Heading size="sm" accessibilityRole="header">
-          결제수단
-        </Heading>
-        <Card className="min-h-14 justify-center">
-          <Text className="font-medium">간편결제</Text>
-          <Text size="xs" className="text-muted-foreground">
-            제공 수단은 선정한 PG사 기준으로 확정됩니다.
-          </Text>
-        </Card>
-      </View>
+      <PaymentMethodPicker selected={method} onSelect={setMethod} />
       <AmountSummary {...amounts} />
     </Screen>
   );

@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { CartButton } from '@/components/order/CartButton';
+import { HeaderActions } from '@/components/order/HeaderActions';
 import { AppStack } from '@/components/ui/AppStack';
 
 export default function OrderLayout() {
@@ -8,15 +8,21 @@ export default function OrderLayout() {
     <AppStack>
       <Stack.Screen
         name="index"
-        options={{ title: '오더', headerLargeTitle: true, headerRight: () => <CartButton /> }}
+        options={{ title: '오더', headerRight: () => <HeaderActions /> }}
       />
-      <Stack.Screen name="item/[id]" options={{ title: '메뉴 상세' }} />
+      <Stack.Screen name="search" options={{ title: '메뉴 검색' }} />
+      <Stack.Screen name="item/[id]" options={{ title: '', headerLargeTitle: false }} />
       <Stack.Screen name="cart" options={{ title: '장바구니' }} />
       <Stack.Screen name="order-type" options={{ title: '주문 방식' }} />
       <Stack.Screen name="checkout" options={{ title: '결제하기' }} />
       <Stack.Screen
         name="complete/[orderId]"
-        options={{ title: '주문 완료', headerBackVisible: false, gestureEnabled: false }}
+        options={{
+          title: '결제 완료',
+          headerLargeTitle: false,
+          headerBackVisible: false,
+          gestureEnabled: false,
+        }}
       />
     </AppStack>
   );

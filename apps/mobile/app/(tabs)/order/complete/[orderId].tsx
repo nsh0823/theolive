@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { CircleCheck } from 'lucide-react-native';
 import { View } from 'react-native';
 
+import { OrderLinesCard } from '@/components/order/OrderLinesCard';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { CtaButton } from '@/components/ui/CtaButton';
@@ -32,7 +33,7 @@ export default function OrderCompleteScreen() {
             footer={
               <>
                 <CtaButton
-                  label="주문 내역 보기"
+                  label="주문 상세 보기"
                   onPress={() =>
                     router.replace({
                       pathname: '/other/orders/[orderId]',
@@ -48,15 +49,26 @@ export default function OrderCompleteScreen() {
               </>
             }
           >
-            <View className="items-center gap-2 py-4">
-              <AppIcon icon={CircleCheck} tone="primary" size={48} />
-              <Heading size="xl">주문이 완료되었어요</Heading>
+            <View className="items-center gap-2 py-4" accessibilityRole="summary">
+              <AppIcon icon={CircleCheck} tone="primary" size={56} />
+              <Heading size="2xl">결제가 완료되었어요</Heading>
               <Text className="text-muted-foreground">
-                주문번호 {order.orderNumber} · {ORDER_TYPE_LABEL[order.orderType]} ·{' '}
-                {formatWon(order.paidAmount)}
+                {ORDER_TYPE_LABEL[order.orderType]} · {formatWon(order.paidAmount)}
               </Text>
+              <View className="mt-2 items-center rounded-2xl bg-cream px-8 py-4">
+                <Text size="xs" className="text-muted-foreground">
+                  주문번호
+                </Text>
+                <Text size="3xl" className="font-bold text-primary">
+                  {order.orderNumber}
+                </Text>
+              </View>
             </View>
             <OrderStatusTracker status={order.status} />
+            <Heading size="sm" accessibilityRole="header">
+              주문 내역
+            </Heading>
+            <OrderLinesCard lines={order.lines} orderType={order.orderType} />
           </Screen>
         ) : null
       }

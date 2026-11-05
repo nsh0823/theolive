@@ -1,7 +1,6 @@
-import { Heading } from '@theolive/ui/components/heading';
 import { Switch } from '@theolive/ui/components/switch';
 import { Text } from '@theolive/ui/components/text';
-import { Check } from 'lucide-react-native';
+import { Ticket } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { formatWon } from '@/lib/format';
@@ -9,6 +8,8 @@ import { COUPON_STATUS, type Coupon } from '@/models';
 
 import { AppIcon } from '../ui/AppIcon';
 import { Card } from '../ui/Card';
+import { FormSection } from '../ui/FormSection';
+import { RadioDot } from '../ui/RadioDot';
 
 const NO_COUPON = 'none';
 
@@ -30,11 +31,8 @@ export function CouponPicker({ coupons, selectedId, onSelect }: CouponProps) {
     })),
   ];
   return (
-    <View className="gap-2">
-      <Heading size="sm" accessibilityRole="header">
-        쿠폰
-      </Heading>
-      <Card className="gap-1 p-2" accessibilityRole="radiogroup">
+    <FormSection title="쿠폰">
+      <View accessibilityRole="radiogroup">
         {options.map((option) => {
           const selected = (selectedId ?? NO_COUPON) === option.id;
           return (
@@ -46,22 +44,23 @@ export function CouponPicker({ coupons, selectedId, onSelect }: CouponProps) {
                 option.detail ? `${option.title}, ${option.detail}` : option.title
               }
               accessibilityState={{ checked: selected }}
-              className={`min-h-12 flex-row items-center gap-3 rounded-md px-3 ${selected ? 'bg-secondary' : ''}`}
+              className="min-h-14 flex-row items-center gap-3"
             >
+              <AppIcon icon={Ticket} tone="muted" />
               <View className="flex-1">
-                <Text className="font-medium">{option.title}</Text>
+                <Text className={selected ? 'font-bold' : ''}>{option.title}</Text>
                 {option.detail ? (
                   <Text size="xs" className="text-muted-foreground">
                     {option.detail}
                   </Text>
                 ) : null}
               </View>
-              {selected ? <AppIcon icon={Check} tone="primary" /> : null}
+              <RadioDot selected={selected} />
             </Pressable>
           );
         })}
-      </Card>
-    </View>
+      </View>
+    </FormSection>
   );
 }
 
@@ -70,13 +69,10 @@ type PointProps = { balance: number; enabled: boolean; onChange: (enabled: boole
 /** PAY-03: use Coupon Points toward the payment. */
 export function PointToggle({ balance, enabled, onChange }: PointProps) {
   return (
-    <View className="gap-2">
-      <Heading size="sm" accessibilityRole="header">
-        쿠폰 포인트
-      </Heading>
-      <Card className="min-h-14 flex-row items-center justify-between">
-        <View>
-          <Text className="font-medium">포인트 사용</Text>
+    <FormSection title="쿠폰 포인트">
+      <Card className="min-h-14 flex-row items-center justify-between gap-3 bg-cream">
+        <View className="flex-1">
+          <Text className="font-medium">쿠폰 포인트 모두 사용</Text>
           <Text size="xs" className="text-muted-foreground">
             보유 {formatWon(balance)}
           </Text>
@@ -88,6 +84,6 @@ export function PointToggle({ balance, enabled, onChange }: PointProps) {
           accessibilityState={{ checked: enabled }}
         />
       </Card>
-    </View>
+    </FormSection>
   );
 }

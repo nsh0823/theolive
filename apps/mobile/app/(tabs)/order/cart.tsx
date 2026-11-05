@@ -1,3 +1,4 @@
+import { Heading } from '@theolive/ui/components/heading';
 import { Text } from '@theolive/ui/components/text';
 import { useRouter } from 'expo-router';
 import { ShoppingBag } from 'lucide-react-native';
@@ -21,7 +22,7 @@ import { useCartStore } from '@/store/useCartStore';
 
 function CartContent({ menu }: { menu: MenuItem[] }) {
   const router = useRouter();
-  const { lines, setQuantity, removeLine } = useCartStore();
+  const { lines, setQuantity, removeLine, changeTemperature } = useCartStore();
   const entries = joinCartLines(lines, menu);
 
   if (entries.length === 0) {
@@ -43,8 +44,10 @@ function CartContent({ menu }: { menu: MenuItem[] }) {
       footer={
         <>
           <View className="flex-row items-center justify-between">
-            <Text className="text-muted-foreground">총 {displayItemCount(entries)}개</Text>
-            <Text size="xl" className="font-bold">
+            <Text className="font-semibold text-muted-foreground">
+              총 {displayItemCount(entries)}개
+            </Text>
+            <Text size="3xl" className="font-bold">
               {formatWon(displaySubtotal(entries))}
             </Text>
           </View>
@@ -57,6 +60,9 @@ function CartContent({ menu }: { menu: MenuItem[] }) {
         </>
       }
     >
+      <Heading size="md" accessibilityRole="header">
+        주문 메뉴
+      </Heading>
       {entries.map((entry) => (
         <CartLineRow
           key={`${entry.line.menuItemId}-${entry.line.temperature}`}
@@ -65,6 +71,9 @@ function CartContent({ menu }: { menu: MenuItem[] }) {
             setQuantity(entry.line.menuItemId, entry.line.temperature, quantity)
           }
           onRemove={() => removeLine(entry.line.menuItemId, entry.line.temperature)}
+          onChangeTemperature={(next) =>
+            changeTemperature(entry.line.menuItemId, entry.line.temperature, next)
+          }
         />
       ))}
     </Screen>
