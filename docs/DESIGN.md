@@ -225,3 +225,54 @@ All navigation chrome is rendered by the platform, never rebuilt from custom vie
 - **Form:** Rendered natively (see **Native Navigation**) and anchored to the screen bottom; height and safe-area handling follow the platform. Where the platform allows, use a `#ffffff` background with a `1px solid #E2E8EE` top edge.
 - **Destinations:** Exactly 4 fixed items, in this order: **Home**, **Order**, **Reward**, **Other**. Do not add, remove, or reorder.
 - **Item States:** Active item displays its icon and `label-sm` label in Deep Olive (`#46533B`). Inactive items display identical icons and labels in Neutral Muted (`#62695D`). No badges or indicator dots on tabs; active status is revealed purely through tone.
+
+## Implementation Addendum (customer app, 2026-11-05)
+
+Source of truth for the mobile app is `apps/mobile/global.css`; values below mirror it.
+
+### Token map (light / dark)
+
+| Token                            | Light                | Dark      | Use                                                             |
+| -------------------------------- | -------------------- | --------- | --------------------------------------------------------------- |
+| `primary`                        | Deep Olive `#46533B` | `#BDCBAD` | Primary buttons, active nav, Olive Stamp card                   |
+| `secondary` / `accent` / `muted` | Pale Olive `#DDE2D2` | `#414A35` | Chips, steppers, selected rows                                  |
+| `sage`                           | Sage Green `#AAB49A` | `#C0CAAF` | Empty stamp slots, unchecked outlines                           |
+| `cream` (new)                    | Warm Cream `#F4F2E9` | `#3A3D32` | Coupon Points card, order number, price summary, profile header |
+| `foreground`                     | Charcoal `#252720`   | `#F1F1E6` | Text                                                            |
+| `background`                     | `#EFF4F8`            | `#1A1C16` | Page canvas                                                     |
+| `card`                           | White                | `#2F312A` | Surfaces                                                        |
+
+Rules: components use tokens only (no hex). Stamps and Points are always distinguishable by
+surface and glyph, not color alone: Stamps = solid olive card, leaf glyph, N/goal count and
+progress bar; Points = cream wallet card, coin glyph, won amount.
+
+### Typography status
+
+Pretendard (KO) and Manrope (EN) are specified but NOT loaded yet; the app currently renders in
+the system font. Proposal (needs approval, adds deps): `pnpm --filter mobile exec expo install
+expo-font @expo-google-fonts/manrope`, bundle Pretendard static OTF/TTF files under
+`apps/mobile/assets/fonts/` (license: SIL OFL), load via `useFonts` in the root layout before
+hiding the splash, then map `--font-sans` in `global.css` `@theme`.
+
+### Logo
+
+`apps/mobile/assets/brand/logo.png` is the user-supplied official logo, copied byte-for-byte and
+rendered through `BrandMark` with `resizeMode="contain"` and its native 672:584 aspect ratio
+(sign-in hero, Home header compact). Never recolor, crop, or redraw.
+
+### Product imagery
+
+No product photography exists. `Thumbnail` is a Warm Cream placeholder tile with a category glyph;
+replace with Storage images using the same footprint (SA-04).
+
+### Reusable components (brief 11)
+
+Bottom nav `(tabs)/_layout.tsx` (native, 4 tabs) | header bell `home/NotificationBell` |
+search + cart `order/HeaderActions`, `IconButton` | product card `order/MenuItemCard` |
+category nav `order/CategoryTabs` | HOT/ICE `ui/Segmented`, cart `Chip` options |
+quantity `ui/QuantityStepper` | cart item `order/CartLineRow` | price summary `order/AmountSummary` |
+coupon selection `order/CheckoutOptions#CouponPicker` | point usage `#PointToggle` |
+payment method `order/PaymentMethodPicker` (UI only) | stamp card `reward/StampCard` |
+coupon card `reward/CouponCard` | order status `order/OrderStatusTracker` |
+notification item `home/NotificationItem` | dialogs `ui/ConfirmDialog`, `order/AddToCartSheet` |
+states `ui/StateViews` (loading, empty, error, offline) via `ui/QueryBoundary`.
