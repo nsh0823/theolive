@@ -3,6 +3,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 
 import SignInScreen from '../app/(auth)/sign-in';
 
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+}));
+
 const mockSignIn = jest.fn().mockResolvedValue({ error: null });
 
 jest.mock('@/services/supabase', () => ({
@@ -33,8 +37,25 @@ describe('SignInScreen', () => {
     }
   });
 
+  it('blocks social login until both required consents are checked', async () => {
+    await renderScreen();
+    await fireEvent.press(screen.getByLabelText('카카오로 계속하기'));
+    expect(screen.queryByText('소셜 로그인은 아직 연결되지 않았어요.')).not.toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('(필수) 이용약관에 동의합니다'));
+    await fireEvent.press(screen.getByLabelText('(필수) 개인정보 처리방침에 동의합니다'));
+    await fireEvent.press(screen.getByLabelText('카카오로 계속하기'));
+    expect(screen.getByText('소셜 로그인은 아직 연결되지 않았어요.')).toBeOnTheScreen();
+  });
+
+  it('shows the official logo with an accessible label', async () => {
+    await renderScreen();
+    expect(screen.getByLabelText("더올리브 The O'live 로고")).toBeOnTheScreen();
+  });
+
   it('tells the user social login is not connected yet', async () => {
     await renderScreen();
+    await fireEvent.press(screen.getByLabelText('(필수) 이용약관에 동의합니다'));
+    await fireEvent.press(screen.getByLabelText('(필수) 개인정보 처리방침에 동의합니다'));
     await fireEvent.press(screen.getByLabelText('카카오로 계속하기'));
     expect(screen.getByText('소셜 로그인은 아직 연결되지 않았어요.')).toBeOnTheScreen();
   });

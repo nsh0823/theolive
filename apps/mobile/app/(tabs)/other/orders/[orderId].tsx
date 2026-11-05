@@ -1,6 +1,8 @@
 import { Heading } from '@theolive/ui/components/heading';
 import { Text } from '@theolive/ui/components/text';
 
+import { useReorder } from '@/hooks/useReorder';
+import { CtaButton } from '@/components/ui/CtaButton';
 import { AmountSummary } from '@/components/order/AmountSummary';
 import { OrderLinesCard } from '@/components/order/OrderLinesCard';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
@@ -13,6 +15,7 @@ import { useRouteParam } from '@/hooks/useRouteParam';
 export default function OrderDetailScreen() {
   const orderId = useRouteParam('orderId') ?? '';
   const state = useOrderQuery(orderId);
+  const reorder = useReorder();
   return (
     <QueryBoundary
       state={state}
@@ -21,7 +24,7 @@ export default function OrderDetailScreen() {
     >
       {(order) =>
         order ? (
-          <Screen>
+          <Screen footer={<CtaButton label="다시 주문" onPress={() => reorder(order.lines)} />}>
             <Text className="text-muted-foreground">
               {order.placedAt} · 주문번호 {order.orderNumber}
             </Text>

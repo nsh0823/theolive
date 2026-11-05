@@ -1,83 +1,131 @@
 import { Heading } from '@theolive/ui/components/heading';
+import { Text } from '@theolive/ui/components/text';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import {
   Bell,
   FileText,
   Fingerprint,
+  Lock,
   Megaphone,
   MessageCircle,
   Receipt,
   ShieldCheck,
+  UserRound,
 } from 'lucide-react-native';
-import { Alert } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { requestAccountDeletion } from '@/fixtures/actions';
-import { useProfileQuery } from '@/fixtures/queries';
-import { useSignOut } from '@/hooks/useAuth';
-import { InfoRow, ListRow } from '@/components/ui/ListRow';
-import { ListGroup } from '@/components/ui/ListGroup';
+import { useAccountDialogs } from '@/components/other/AccountDialogs';
+import { LinkGrid } from '@/components/other/LinkGrid';
+import { ShortcutTiles } from '@/components/other/ShortcutTiles';
 import { Screen } from '@/components/ui/Screen';
+import { useProfileQuery } from '@/fixtures/queries';
 
 export default function OtherScreen() {
   const router = useRouter();
   const profile = useProfileQuery();
-  const signOut = useSignOut();
+  const { dialogs, askLogout, askDeletion } = useAccountDialogs();
   const version = Constants.expoConfig?.version ?? '-';
-
-  // OTH-08: both destructive actions ask for confirmation first.
-  const confirmLogout = () =>
-    Alert.alert('로그아웃할까요?', undefined, [
-      { text: '취소', style: 'cancel' },
-      { text: '로그아웃', style: 'destructive', onPress: () => signOut.mutate() },
-    ]);
-
-  const confirmDeletion = () =>
-    Alert.alert('회원 탈퇴', '탈퇴하면 정책에 따라 계정과 개인정보가 처리돼요. 계속할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '탈퇴',
-        style: 'destructive',
-        onPress: () =>
-          void requestAccountDeletion().catch((error: unknown) => {
-            console.error('other: account deletion request failed', error);
-            Alert.alert('탈퇴 요청에 실패했어요', '잠시 후 다시 시도해 주세요.');
-          }),
-      },
-    ]);
+  const name = profile.status === 'success' ? profile.data.displayName : '내 계정';
+  const provider = profile.status === 'success' ? `${profile.data.loginProvider} 로그인` : '';
 
   return (
     <Screen>
-      <Heading size="lg">
-        {profile.status === 'success' ? `${profile.data.displayName}님` : '내 계정'}
-      </Heading>
-      <ListGroup>
-        <ListRow label="주문 내역" icon={Receipt} onPress={() => router.push('/other/orders')} />
-        <ListRow label="공지사항" icon={Megaphone} onPress={() => router.push('/other/notices')} />
-        <ListRow
-          label="문의하기"
-          icon={MessageCircle}
-          onPress={() => router.push('/other/inquiry')}
+      <Pressable
+        onPress={() => router.push('/other/profile')}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}님, ${provider}, 프로필 정보 보기`}
+        className="min-h-20 items-center justify-center gap-1 py-2"
+      >
+        <Heading size="2xl" className="text-center">
+          <Heading size="2xl" className="text-primary">
+            {name}
+          </Heading>{' '}
+          님
+        </Heading>
+        <Text className="text-muted-foreground">환영합니다!</Text>
+      </Pressable>
+
+      <ShortcutTiles
+        items={[
+          { label: '주문 내역', icon: Receipt, onPress: () => router.push('/other/orders') },
+          { label: '프로필 정보', icon: UserRound, onPress: () => router.push('/other/profile') },
+          {
+            label: '알림 설정',
+            icon: Bell,
+            onPress: () => router.push('/other/notification-settings'),
+          },
+        ]}
+      />
+
+      <View className="gap-4">
+        <LinkGrid
+          title="고객 지원"
+          items={[
+            { label: '공지사항', icon: Megaphone, onPress: () => router.push('/other/notices') },
+            { label: '문의', icon: MessageCircle, onPress: () => router.push('/other/inquiry') },
+          ]}
         />
-      </ListGroup>
-      <ListGroup>
-        <ListRow
-          label="알림 설정"
-          icon={Bell}
-          onPress={() => router.push('/other/notification-settings')}
+        <LinkGrid
+          title="설정"
+          items={[
+            {
+              label: '앱 비밀번호 잠금',
+              icon: Lock,
+              onPress: () => router.push('/other/app-lock'),
+            },
+            {
+              label: '생체 인증 (Face ID / 지문)',
+              icon: Fingerprint,
+              onPress: () => router.push('/other/biometric'),
+            },
+          ]}
         />
-        <ListRow
-          label="앱 잠금 / 생체 인증"
-          icon={Fingerprint}
-          onPress={() => router.push('/other/app-lock')}
+        <LinkGrid
+          title="앱 정보"
+          isLast
+          items={[
+            {
+              label: '이용약관',
+              icon: FileText,
+              onPress: () =>
+                router.push({ pathname: '/other/terms/[id]', params: { id: 'terms' } }),
+            },
+            {
+              label: '개인정보 처리방침',
+              icon: ShieldCheck,
+              onPress: () =>
+                router.push({ pathname: '/other/terms/[id]', params: { id: 'privacy' } }),
+            },
+            { label: '앱 버전', icon: FileText, value: version },
+          ]}
         />
-        <ListRow label="이용약관" icon={FileText} onPress={() => router.push('/other/terms')} />
-        <InfoRow label="앱 버전" value={version} />
-      </ListGroup>
-      <ListGroup>
-        <ListRow label="로그아웃" icon={ShieldCheck} showChevron={false} onPress={confirmLogout} />
-        <ListRow label="회원 탈퇴" destructive showChevron={false} onPress={confirmDeletion} />
-      </ListGroup>
+      </View>
+
+      <View className="flex-row items-center justify-center">
+        <Pressable
+          onPress={askLogout}
+          accessibilityRole="button"
+          accessibilityLabel="로그아웃"
+          className="min-h-11 justify-center px-4"
+        >
+          <Text size="sm" className="text-muted-foreground underline">
+            로그아웃
+          </Text>
+        </Pressable>
+        <View className="h-3 w-px bg-border" />
+        <Pressable
+          onPress={askDeletion}
+          accessibilityRole="button"
+          accessibilityLabel="회원 탈퇴"
+          className="min-h-11 justify-center px-4"
+        >
+          <Text size="sm" className="text-destructive underline">
+            회원 탈퇴
+          </Text>
+        </Pressable>
+      </View>
+      {dialogs}
     </Screen>
   );
 }
