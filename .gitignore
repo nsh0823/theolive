@@ -49,3 +49,6 @@ coverage/
 # supabase
 supabase/.branches
 supabase/.temp
+
+# vite
+vite.config.*.timestamp-*

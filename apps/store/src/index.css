@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens mirror apps/mobile/global.css (same names, same RGB values) so web and mobile read as one system.
+ * Light theme only for now. Extra tokens (warning, *-soft, success) are store-web additions for status
+ * badges; they are not in the mobile map yet.
+ */
+@theme {
+  --color-primary: #46533b;
+  --color-primary-foreground: #ffffff;
+  --color-card: #ffffff;
+  --color-secondary: #dde2d2;
+  --color-secondary-foreground: #46533b;
+  --color-sage: #aab49a;
+  --color-sage-foreground: #252720;
+  --color-cream: #f4f2e9;
+  --color-cream-foreground: #252720;
+  --color-background: #eff4f8;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #252720;
+  --color-muted: #dde2d2;
+  --color-muted-foreground: #62695d;
+  --color-destructive: #ba1a1a;
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-soft: #ffdad6;
+  --color-warning: #7a4300;
+  --color-warning-soft: #fdebc8;
+  --color-foreground: #252720;
+  --color-border: #e2e8ee;
+  --color-input: #e2e8ee;
+  --color-ring: #46533b;
+  --color-accent: #dde2d2;
+  --color-accent-foreground: #46533b;
+
+  /* Pretendard (KO) and Manrope (EN) are not bundled yet; system fallbacks apply until fonts are approved. */
+  --font-sans:
+    'Pretendard Variable', Pretendard, Manrope, -apple-system, BlinkMacSystemFont,
+    'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+
+  --shadow-card: 0 2px 8px rgb(37 39 32 / 0.04);
+  --shadow-overlay: 0 8px 24px rgb(37 39 32 / 0.16);
+
+  --animate-new-pulse: new-pulse 1.8s ease-out infinite;
+  @keyframes new-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgb(70 83 59 / 0.45);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 10px rgb(70 83 59 / 0);
+    }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
