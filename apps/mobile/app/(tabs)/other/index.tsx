@@ -8,6 +8,7 @@ import {
   Fingerprint,
   Lock,
   Megaphone,
+  Pencil,
   MessageCircle,
   Receipt,
   ShieldCheck,
@@ -19,12 +20,12 @@ import { useAccountDialogs } from '@/components/other/AccountDialogs';
 import { LinkGrid } from '@/components/other/LinkGrid';
 import { ShortcutTiles } from '@/components/other/ShortcutTiles';
 import { Screen } from '@/components/ui/Screen';
-import { useProfileQuery } from '@/fixtures/queries';
+import { useProfileQuery } from '@/hooks/useProfileQuery';
 
 export default function OtherScreen() {
   const router = useRouter();
   const profile = useProfileQuery();
-  const { dialogs, askLogout, askDeletion } = useAccountDialogs();
+  const { dialogs, askLogout, askDeletion, askNickname } = useAccountDialogs();
   const version = Constants.expoConfig?.version ?? '-';
   const name = profile.status === 'success' ? profile.data.displayName : '내 계정';
   const provider = profile.status === 'success' ? `${profile.data.loginProvider} 로그인` : '';
@@ -69,6 +70,7 @@ export default function OtherScreen() {
         <LinkGrid
           title="설정"
           items={[
+            { label: '닉네임 변경', icon: Pencil, onPress: askNickname },
             {
               label: '앱 비밀번호 잠금',
               icon: Lock,

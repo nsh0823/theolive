@@ -3,22 +3,20 @@ import { Text } from '@theolive/ui/components/text';
 
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useNoticesQuery } from '@/fixtures/queries';
+import { useNoticeQuery } from '@/hooks/useNotices';
 import { useRouteParam } from '@/hooks/useRouteParam';
-import { combineStates, successState } from '@/lib/queryState';
 
 export default function NoticeDetailScreen() {
   const id = useRouteParam('id');
-  const state = combineStates(useNoticesQuery(), successState(id));
+  const state = useNoticeQuery(id ?? undefined);
   return (
     <QueryBoundary
       state={state}
-      isEmpty={([notices, noticeId]) => !notices.some((notice) => notice.id === noticeId)}
+      isEmpty={(notice) => notice === null}
       emptyMessage="공지사항을 찾을 수 없어요."
     >
-      {([notices, noticeId]) => {
-        const notice = notices.find((candidate) => candidate.id === noticeId);
-        return notice ? (
+      {(notice) =>
+        notice ? (
           <Screen>
             <Heading size="lg">{notice.title}</Heading>
             <Text size="xs" className="text-muted-foreground">
@@ -26,8 +24,8 @@ export default function NoticeDetailScreen() {
             </Text>
             <Text>{notice.body}</Text>
           </Screen>
-        ) : null;
-      }}
+        ) : null
+      }
     </QueryBoundary>
   );
 }

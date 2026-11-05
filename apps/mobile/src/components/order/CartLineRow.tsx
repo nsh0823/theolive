@@ -3,7 +3,7 @@ import { X } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { formatWon } from '@/lib/format';
-import { TEMPERATURE_LABEL } from '@/lib/labels';
+import { TEMPERATURE_LABEL, temperatureText } from '@/lib/labels';
 import type { Temperature } from '@/models';
 import type { DisplayCartLine } from '@/lib/displayTotals';
 import { MAX_LINE_QUANTITY, MIN_LINE_QUANTITY } from '@/store/useCartStore';
@@ -23,11 +23,12 @@ type Props = {
 
 export function CartLineRow({ entry, onQuantityChange, onRemove, onChangeTemperature }: Props) {
   const { line, item } = entry;
-  const temperature = TEMPERATURE_LABEL[line.temperature];
+  const temperature = temperatureText(line.temperature);
+  const nameWithTemperature = [item.name, temperature].filter((part) => part !== '').join(' ');
   return (
     <View className="gap-3 border-b border-border pb-5 pt-2">
       <View className="flex-row gap-4">
-        <Thumbnail size="xl" categoryId={item.categoryId} />
+        <Thumbnail size="xl" imageUrl={item.imageUrl} />
         <View className="flex-1 gap-1">
           <View className="flex-row items-start justify-between gap-2">
             <Text size="lg" className="flex-1 font-bold">
@@ -36,7 +37,7 @@ export function CartLineRow({ entry, onQuantityChange, onRemove, onChangeTempera
             <Pressable
               onPress={onRemove}
               accessibilityRole="button"
-              accessibilityLabel={`${item.name} ${temperature} 삭제`}
+              accessibilityLabel={`${nameWithTemperature} 삭제`}
               className="-mr-2 -mt-2 h-11 w-11 items-center justify-center"
             >
               <View className="h-7 w-7 items-center justify-center rounded-full border border-sage">
@@ -45,7 +46,7 @@ export function CartLineRow({ entry, onQuantityChange, onRemove, onChangeTempera
             </Pressable>
           </View>
           <Text size="sm" className="text-muted-foreground">
-            {temperature} | 개당 {formatWon(item.price)}
+            {temperature ? `${temperature} | ` : ''}개당 {formatWon(item.price)}
           </Text>
           {item.isSoldOut ? <Pill label="품절 · 삭제 후 주문해 주세요" tone="danger" /> : null}
           <View className="flex-1" />
@@ -55,7 +56,7 @@ export function CartLineRow({ entry, onQuantityChange, onRemove, onChangeTempera
               min={MIN_LINE_QUANTITY}
               max={MAX_LINE_QUANTITY}
               onChange={onQuantityChange}
-              itemLabel={`${item.name} ${temperature}`}
+              itemLabel={nameWithTemperature}
             />
             <Text size="lg" className="font-bold">
               {formatWon(item.price * line.quantity)}

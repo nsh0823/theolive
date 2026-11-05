@@ -1,10 +1,11 @@
+import { SOCIAL_PROVIDER } from '@theolive/api';
 import { Button, ButtonText } from '@theolive/ui/components/button';
 
+// Launch providers (approved 2026-11-05). Naver is added later, it is not a built-in Supabase provider (OQ-1).
 export const SOCIAL_PROVIDERS = [
-  { id: 'kakao', label: '카카오로 계속하기' },
-  { id: 'naver', label: '네이버로 계속하기' },
-  { id: 'google', label: 'Google로 계속하기' },
-  { id: 'apple', label: 'Apple로 계속하기' },
+  { id: SOCIAL_PROVIDER.KAKAO, label: '카카오로 계속하기' },
+  { id: SOCIAL_PROVIDER.GOOGLE, label: 'Google로 계속하기' },
+  { id: SOCIAL_PROVIDER.APPLE, label: 'Apple로 계속하기' },
 ] as const;
 
 export type SocialProviderId = (typeof SOCIAL_PROVIDERS)[number]['id'];

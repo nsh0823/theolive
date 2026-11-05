@@ -4,7 +4,7 @@ import { Coins, Leaf, Ticket, type LucideIcon } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
 import { formatWon } from '@/lib/format';
-import { COUPON_STATUS, type Coupon, type PointSummary, type StampSummary } from '@/models';
+import type { PointSummary, StampSummary } from '@/models';
 
 import { AppIcon } from '../ui/AppIcon';
 import { ChipRow } from '../ui/ChipRow';
@@ -27,23 +27,17 @@ function ShortcutPill({ icon, label, value, href }: PillProps) {
   );
 }
 
-type Props = { stamps: StampSummary; coupons: Coupon[]; points: PointSummary };
+type Props = { stamps: StampSummary; couponCount: number; points: PointSummary };
 
 /**
  * Quick-glance pills under the greeting. Stamps, coupons, and points stay three distinct
  * pills with their own glyph and unit (개 / 장 / 원); balances are never combined.
  */
-export function ShortcutPills({ stamps, coupons, points }: Props) {
-  const availableCoupons = coupons.filter((c) => c.status === COUPON_STATUS.AVAILABLE).length;
+export function ShortcutPills({ stamps, couponCount, points }: Props) {
   return (
     <ChipRow>
       <ShortcutPill icon={Leaf} label="스탬프" value={`${stamps.count}개`} href="/reward/stamps" />
-      <ShortcutPill
-        icon={Ticket}
-        label="쿠폰"
-        value={`${availableCoupons}장`}
-        href="/reward/coupons"
-      />
+      <ShortcutPill icon={Ticket} label="쿠폰" value={`${couponCount}장`} href="/reward/coupons" />
       <ShortcutPill
         icon={Coins}
         label="포인트"

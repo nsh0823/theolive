@@ -1,25 +1,28 @@
 import { Heading } from '@theolive/ui/components/heading';
-import { Text } from '@theolive/ui/components/text';
 import { useRouter } from 'expo-router';
-import { CircleCheck } from 'lucide-react-native';
-import { View } from 'react-native';
 
+import { CancelOrderControl } from '@/components/order/CancelOrderControl';
 import { OrderLinesCard } from '@/components/order/OrderLinesCard';
+import { OrderResultHeader } from '@/components/order/OrderResultHeader';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
-import { AppIcon } from '@/components/ui/AppIcon';
 import { CtaButton } from '@/components/ui/CtaButton';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useOrderQuery } from '@/fixtures/queries';
+import { useOrderQuery, useRecoverPayment } from '@/hooks/useOrders';
 import { useRouteParam } from '@/hooks/useRouteParam';
-import { formatWon } from '@/lib/format';
-import { ORDER_TYPE_LABEL } from '@/lib/labels';
+import { ORDER_STATUS } from '@/models';
 
-/** Payment complete + live order status (PAID onward, PRD 7.1). */
+/**
+ * Live order status after paying (PAID onward, PRD 7.1). Everything shown is the server's state; while the
+ * payment is still unconfirmed (app was killed, webhook late) the server is asked directly to settle it.
+ */
 export default function OrderCompleteScreen() {
   const router = useRouter();
   const orderId = useRouteParam('orderId') ?? '';
   const state = useOrderQuery(orderId);
+  const isUnpaid =
+    state.status === 'success' && state.data?.status === ORDER_STATUS.PENDING_PAYMENT;
+  useRecoverPayment(orderId, isUnpaid);
 
   return (
     <QueryBoundary
@@ -32,6 +35,7 @@ export default function OrderCompleteScreen() {
           <Screen
             footer={
               <>
+                <CancelOrderControl order={order} />
                 <CtaButton
                   label="주문 상세 보기"
                   onPress={() =>
@@ -49,21 +53,7 @@ export default function OrderCompleteScreen() {
               </>
             }
           >
-            <View className="items-center gap-2 py-4" accessibilityRole="summary">
-              <AppIcon icon={CircleCheck} tone="primary" size={56} />
-              <Heading size="2xl">결제가 완료되었어요</Heading>
-              <Text className="text-muted-foreground">
-                {ORDER_TYPE_LABEL[order.orderType]} · {formatWon(order.paidAmount)}
-              </Text>
-              <View className="mt-2 items-center rounded-2xl bg-cream px-8 py-4">
-                <Text size="xs" className="text-muted-foreground">
-                  주문번호
-                </Text>
-                <Text size="3xl" className="font-bold text-primary">
-                  {order.orderNumber}
-                </Text>
-              </View>
-            </View>
+            <OrderResultHeader order={order} />
             <OrderStatusTracker status={order.status} />
             <Heading size="sm" accessibilityRole="header">
               주문 내역

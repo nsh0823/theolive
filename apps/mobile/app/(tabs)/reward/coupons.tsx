@@ -8,7 +8,7 @@ import { Chip } from '@/components/ui/Chip';
 import { ChipRow } from '@/components/ui/ChipRow';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useCouponsQuery } from '@/fixtures/queries';
+import { useCouponsQuery } from '@/hooks/useRewards';
 import { COUPON_STATUS, type CouponStatus } from '@/models';
 
 const FILTERS: CouponStatus[] = [

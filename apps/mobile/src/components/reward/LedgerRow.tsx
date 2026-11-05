@@ -21,7 +21,7 @@ export function LedgerList({ entries, unit }: Props) {
           key={entry.id}
           className="min-h-16 flex-row items-center justify-between border-b border-border py-3"
           accessible
-          accessibilityLabel={`${entry.at} ${LEDGER_KIND_LABEL[entry.kind]} ${entry.label} ${formatAmount(entry.amount, unit)}`}
+          accessibilityLabel={`${entry.at} ${LEDGER_KIND_LABEL[entry.kind]} ${entry.label} ${formatAmount(entry.amount, unit)}${entry.note ? ` ${entry.note}` : ''}`}
         >
           <View className="gap-0.5">
             <Text className="font-medium">
@@ -30,6 +30,11 @@ export function LedgerList({ entries, unit }: Props) {
             <Text size="xs" className="text-muted-foreground">
               {entry.at}
             </Text>
+            {entry.note ? (
+              <Text size="xs" className="text-muted-foreground">
+                {entry.note}
+              </Text>
+            ) : null}
           </View>
           <Text className="font-bold">{formatAmount(entry.amount, unit)}</Text>
         </View>

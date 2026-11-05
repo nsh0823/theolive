@@ -2,7 +2,7 @@ import { Text } from '@theolive/ui/components/text';
 import { ChevronRight } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
-import { formatWon } from '@/lib/format';
+import { formatDateTime, formatWon } from '@/lib/format';
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL } from '@/lib/labels';
 import type { Order } from '@/models';
 
@@ -15,17 +15,19 @@ type Props = { order: Order; onPress: (order: Order) => void; onReorder: (order:
 /** OTH-01: date/time, order number, products, type, amount, status, and reorder. */
 export function OrderRow({ order, onPress, onReorder }: Props) {
   const products = order.lines.map((line) => `${line.name} ${line.quantity}개`).join(', ');
+  const placedAt = formatDateTime(order.placedAt);
+  const number = order.orderNumber ?? '-';
   return (
     <View className="gap-3 border-b border-border py-5">
       <Pressable
         onPress={() => onPress(order)}
         accessibilityRole="button"
-        accessibilityLabel={`${order.placedAt}, 주문번호 ${order.orderNumber}, ${products}, ${ORDER_TYPE_LABEL[order.orderType]}, ${formatWon(order.paidAmount)}, ${ORDER_STATUS_LABEL[order.status]}`}
+        accessibilityLabel={`${placedAt}, 주문번호 ${number}, ${products}, ${ORDER_TYPE_LABEL[order.orderType]}, ${formatWon(order.paidAmount)}, ${ORDER_STATUS_LABEL[order.status]}`}
         className="gap-2"
       >
         <View className="flex-row items-center justify-between gap-2">
           <Text size="xs" className="flex-1 text-muted-foreground">
-            {order.placedAt} · {order.orderNumber}
+            {placedAt} · {number}
           </Text>
           <Pill label={ORDER_STATUS_LABEL[order.status]} />
           <AppIcon icon={ChevronRight} tone="muted" />

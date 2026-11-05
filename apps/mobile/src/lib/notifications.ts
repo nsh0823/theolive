@@ -12,12 +12,9 @@ export const NOTIFICATION_FILTERS: { value: NotificationFilter; label: string }[
   { value: NOTIFICATION_KIND.NOTICE, label: '공지' },
 ];
 
-/** Server read flag OR a local read mark counts as read. */
-export const isNotificationRead = (item: AppNotification, readIds: string[]) =>
-  item.isRead || readIds.includes(item.id);
-
-export function unreadCount(items: AppNotification[], readIds: string[]): number {
-  return items.filter((item) => !isNotificationRead(item, readIds)).length;
+/** The server owns the read flag. */
+export function unreadCount(items: AppNotification[]): number {
+  return items.filter((item) => !item.isRead).length;
 }
 
 export function filterNotifications(
@@ -25,4 +22,11 @@ export function filterNotifications(
   filter: NotificationFilter,
 ): AppNotification[] {
   return filter === 'all' ? items : items.filter((item) => item.kind === filter);
+}
+
+/** Order and payment messages open the order they are about. */
+export function notificationOrderId(item: AppNotification): string | null {
+  const isOrderMessage =
+    item.kind === NOTIFICATION_KIND.ORDER || item.kind === NOTIFICATION_KIND.PAYMENT;
+  return isOrderMessage ? item.orderId : null;
 }

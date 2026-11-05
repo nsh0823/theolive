@@ -1,9 +1,11 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 
+import { useOrderLiveSync } from '@/hooks/useOrderLiveSync';
 import { useToneColor } from '@/lib/useToneColor';
 
 /** PRD 4.1 / DESIGN.md: exactly four tabs, in this order, rendered natively. */
 export default function TabsLayout() {
+  useOrderLiveSync();
   const active = useToneColor('primary');
   const inactive = useToneColor('muted');
   const surface = useToneColor('card');

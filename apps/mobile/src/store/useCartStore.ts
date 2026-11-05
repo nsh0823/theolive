@@ -7,16 +7,21 @@ export const MAX_LINE_QUANTITY = 20;
 
 type CartState = {
   lines: CartLine[];
+  /** Lines dropped because their item is no longer sold; shown once in the cart so it is not a silent change. */
+  removedCount: number;
   orderType: OrderType;
-  addLine: (menuItemId: string, temperature: Temperature, quantity: number) => void;
-  setQuantity: (menuItemId: string, temperature: Temperature, quantity: number) => void;
-  removeLine: (menuItemId: string, temperature: Temperature) => void;
-  changeTemperature: (menuItemId: string, from: Temperature, to: Temperature) => void;
+  addLine: (menuItemId: string, temperature: Temperature | null, quantity: number) => void;
+  setQuantity: (menuItemId: string, temperature: Temperature | null, quantity: number) => void;
+  removeLine: (menuItemId: string, temperature: Temperature | null) => void;
+  changeTemperature: (menuItemId: string, from: Temperature | null, to: Temperature) => void;
   addLines: (lines: CartLine[]) => void;
+  replaceLines: (lines: CartLine[]) => void;
+  dropUnavailable: (kept: CartLine[], removedCount: number) => void;
+  clear: () => void;
   setOrderType: (orderType: OrderType) => void;
 };
 
-const isSameLine = (line: CartLine, menuItemId: string, temperature: Temperature) =>
+const isSameLine = (line: CartLine, menuItemId: string, temperature: Temperature | null) =>
   line.menuItemId === menuItemId && line.temperature === temperature;
 
 const clampQuantity = (quantity: number) =>
@@ -25,6 +30,7 @@ const clampQuantity = (quantity: number) =>
 /** In-memory only: carts are never persisted locally (the server owns orders). */
 export const useCartStore = create<CartState>()((set, get) => ({
   lines: [],
+  removedCount: 0,
   orderType: ORDER_TYPE.TAKEOUT,
   addLine: (menuItemId, temperature, quantity) =>
     set((state) => {
@@ -71,5 +77,9 @@ export const useCartStore = create<CartState>()((set, get) => ({
     }),
   addLines: (lines) =>
     lines.forEach((line) => get().addLine(line.menuItemId, line.temperature, line.quantity)),
+  replaceLines: (lines) => set({ lines }),
+  dropUnavailable: (kept, removedCount) =>
+    set((state) => ({ lines: kept, removedCount: state.removedCount + removedCount })),
+  clear: () => set({ lines: [], removedCount: 0 }),
   setOrderType: (orderType) => set({ orderType }),
 }));

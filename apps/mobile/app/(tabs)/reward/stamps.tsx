@@ -1,7 +1,8 @@
+import { isNetworkError } from '@theolive/api';
 import { Heading } from '@theolive/ui/components/heading';
 import { Text } from '@theolive/ui/components/text';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { LedgerList } from '@/components/reward/LedgerRow';
@@ -12,31 +13,50 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CtaButton } from '@/components/ui/CtaButton';
 import { QueryBoundary, isEmptyList } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { requestStampExchange } from '@/fixtures/actions';
-import { useStampExchangeQuery, useStampLedgerQuery, useStampsQuery } from '@/fixtures/queries';
+import {
+  useRedeemStampsMutation,
+  useStampExchangeQuery,
+  useStampLedgerQuery,
+  useStampsQuery,
+} from '@/hooks/useRewards';
+import { userMessage } from '@/lib/errorMessage';
 import { combineStates } from '@/lib/queryState';
+import { createRequestId } from '@/lib/uuid';
 import type { StampExchangeOption } from '@/models';
 
 export default function StampsScreen() {
   const router = useRouter();
   const state = combineStates(useStampsQuery(), useStampExchangeQuery());
   const ledger = useStampLedgerQuery();
+  const redeem = useRedeemStampsMutation();
   const [pending, setPending] = useState<StampExchangeOption | null>(null);
-  const [requestedTitle, setRequestedTitle] = useState<string | null>(null);
+  const [exchangedTitle, setExchangedTitle] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // One request id per exchange attempt (RW-02): a retry after a lost answer replays instead of exchanging twice.
+  const attempts = useRef(new Map<string, string>());
+  const inFlight = useRef(false);
 
-  // The server verifies balance and conditions, then deducts stamps and issues the coupon (RW-02).
+  // The server verifies the balance, deducts the stamps and issues the coupon in one step.
   const confirmExchange = async () => {
-    if (!pending) return;
+    if (!pending || inFlight.current) return;
     const option = pending;
+    inFlight.current = true;
     setPending(null);
     setErrorMessage(null);
+    setExchangedTitle(null);
+    const clientRequestId = attempts.current.get(option.id) ?? createRequestId();
+    attempts.current.set(option.id, clientRequestId);
     try {
-      await requestStampExchange(option.id);
-      setRequestedTitle(option.title);
+      await redeem.mutateAsync({ couponId: option.id, clientRequestId });
+      attempts.current.delete(option.id);
+      setExchangedTitle(option.title);
     } catch (error) {
-      console.error('stamps: exchange request failed', error);
-      setErrorMessage('교환하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      console.error('stamps: exchange failed', error);
+      // The outcome is unknown after a lost connection, so that attempt keeps its id; any server answer ends it.
+      if (!isNetworkError(error)) attempts.current.delete(option.id);
+      setErrorMessage(userMessage(error));
+    } finally {
+      inFlight.current = false;
     }
   };
 
@@ -46,13 +66,13 @@ export default function StampsScreen() {
         {([stamps, options]) => (
           <>
             <StampCard stamps={stamps} />
-            {requestedTitle ? (
+            {exchangedTitle ? (
               <Card
                 className="gap-2 rounded-2xl border-0 bg-secondary"
                 accessibilityLiveRegion="polite"
               >
                 <Text className="font-semibold text-secondary-foreground">
-                  {requestedTitle} 교환을 요청했어요.
+                  {exchangedTitle}으로 교환했어요.
                 </Text>
                 <CtaButton
                   label="내 쿠폰 보기"

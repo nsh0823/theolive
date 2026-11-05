@@ -5,7 +5,7 @@ import {
   joinCartLines,
   previewCheckoutAmounts,
 } from '@/lib/displayTotals';
-import { FIXTURE_MENU } from '@/fixtures/data';
+import { TEST_MENU } from '../test-utils/testMenu';
 
 describe('display totals', () => {
   const lines = [
@@ -13,7 +13,7 @@ describe('display totals', () => {
     { menuItemId: 'vanilla-latte', temperature: 'ICE' as const, quantity: 1 },
     { menuItemId: 'missing', temperature: 'ICE' as const, quantity: 1 },
   ];
-  const entries = joinCartLines(lines, FIXTURE_MENU);
+  const entries = joinCartLines(lines, TEST_MENU);
 
   it('drops lines whose menu item no longer exists', () => {
     expect(entries).toHaveLength(2);

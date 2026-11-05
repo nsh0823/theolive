@@ -1,6 +1,7 @@
 import { Heading } from '@theolive/ui/components/heading';
 import { Text } from '@theolive/ui/components/text';
 
+import { CancelOrderControl } from '@/components/order/CancelOrderControl';
 import { useReorder } from '@/hooks/useReorder';
 import { CtaButton } from '@/components/ui/CtaButton';
 import { AmountSummary } from '@/components/order/AmountSummary';
@@ -8,7 +9,9 @@ import { OrderLinesCard } from '@/components/order/OrderLinesCard';
 import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useOrderQuery } from '@/fixtures/queries';
+import { useOrderQuery } from '@/hooks/useOrders';
+import { formatDateTime } from '@/lib/format';
+import { refundNote } from '@/lib/labels';
 import { useRouteParam } from '@/hooks/useRouteParam';
 
 /** OTH-02: items, options, order type, payment breakdown. */
@@ -24,10 +27,20 @@ export default function OrderDetailScreen() {
     >
       {(order) =>
         order ? (
-          <Screen footer={<CtaButton label="다시 주문" onPress={() => reorder(order.lines)} />}>
+          <Screen
+            footer={
+              <>
+                <CancelOrderControl order={order} />
+                <CtaButton label="다시 주문" onPress={() => reorder(order.lines)} />
+              </>
+            }
+          >
             <Text className="text-muted-foreground">
-              {order.placedAt} · 주문번호 {order.orderNumber}
+              {formatDateTime(order.placedAt)} · 주문번호 {order.orderNumber ?? '-'}
             </Text>
+            {refundNote(order.status, order.paymentStatus) ? (
+              <Text className="font-semibold">{refundNote(order.status, order.paymentStatus)}</Text>
+            ) : null}
             <OrderStatusTracker status={order.status} />
             <Heading size="sm" accessibilityRole="header">
               주문 메뉴

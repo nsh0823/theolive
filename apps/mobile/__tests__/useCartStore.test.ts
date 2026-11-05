@@ -37,3 +37,23 @@ describe('useCartStore', () => {
     expect(useCartStore.getState().lines).toEqual([]);
   });
 });
+
+describe('items without a temperature choice (OQ-16)', () => {
+  it('stores them with a null temperature, merges them and keeps ids only', () => {
+    const { addLine } = useCartStore.getState();
+    addLine('bottled-water', null, 1);
+    addLine('bottled-water', null, 2);
+    expect(useCartStore.getState().lines).toEqual([
+      { menuItemId: 'bottled-water', temperature: null, quantity: 3 },
+    ]);
+  });
+
+  it('removes and re-quantifies them by item id and null temperature', () => {
+    const { addLine, setQuantity, removeLine } = useCartStore.getState();
+    addLine('bottled-water', null, 1);
+    setQuantity('bottled-water', null, 5);
+    expect(useCartStore.getState().lines[0]?.quantity).toBe(5);
+    removeLine('bottled-water', null);
+    expect(useCartStore.getState().lines).toEqual([]);
+  });
+});

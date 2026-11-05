@@ -5,7 +5,7 @@ import { ListGroup } from '@/components/ui/ListGroup';
 import { InfoRow } from '@/components/ui/ListRow';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useProfileQuery } from '@/fixtures/queries';
+import { useProfileQuery } from '@/hooks/useProfileQuery';
 
 /** Read-only profile; identity comes from the social provider and is owned by the server. */
 export default function ProfileInfoScreen() {

@@ -11,7 +11,7 @@ import { StampCard } from '@/components/reward/StampCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import type { QueryState } from '@/lib/queryState';
-import { FIXTURE_COUPONS, FIXTURE_NOTIFICATIONS } from '@/fixtures/data';
+import { TEST_COUPONS } from '../test-utils/testRewards';
 
 function at<T>(list: T[], index: number): T {
   const value = list[index];
@@ -86,7 +86,9 @@ describe('reward cards', () => {
     await render(
       <>
         <StampCard stamps={{ count: 7, goal: 10 }} />
-        <PointBalanceCard points={{ balance: 12000 }} />
+        <PointBalanceCard
+          points={{ balance: 12000, held: 0, available: 12000, nextExpiresAt: null }}
+        />
       </>,
     );
     expect(screen.getByLabelText(/올리브 스탬프 7개.*다음 보상까지 3개/)).toBeOnTheScreen();
@@ -97,26 +99,31 @@ describe('reward cards', () => {
     expect(screen.getByText('쿠폰으로 교환할 수 있어요')).toBeOnTheScreen();
   });
   it('shows coupon status as text', async () => {
-    await render(<CouponCard coupon={at(FIXTURE_COUPONS, 1)} />);
+    await render(<CouponCard coupon={at(TEST_COUPONS, 1)} />);
     expect(screen.getByText('사용 완료')).toBeOnTheScreen();
   });
 });
 
+const TEST_NOTIFICATION = {
+  id: 'n1',
+  kind: 'ORDER' as const,
+  title: '주문이 접수되었어요. (A-34)',
+  at: '2026.11.04 13:51',
+  isRead: false,
+  orderId: null,
+};
+
 describe('NotificationItem', () => {
   it('marks unread in text and not only by style', async () => {
     const onPress = jest.fn();
-    await render(
-      <NotificationItem item={at(FIXTURE_NOTIFICATIONS, 0)} isRead={false} onPress={onPress} />,
-    );
+    await render(<NotificationItem item={TEST_NOTIFICATION} isRead={false} onPress={onPress} />);
     expect(screen.getByText('새 알림')).toBeOnTheScreen();
     expect(screen.getByLabelText(/^읽지 않음, 주문 알림/)).toBeOnTheScreen();
     await fireEvent.press(screen.getByLabelText(/^읽지 않음/));
     expect(onPress).toHaveBeenCalled();
   });
   it('reads as 읽음 once read', async () => {
-    await render(
-      <NotificationItem item={at(FIXTURE_NOTIFICATIONS, 0)} isRead onPress={jest.fn()} />,
-    );
+    await render(<NotificationItem item={TEST_NOTIFICATION} isRead onPress={jest.fn()} />);
     expect(screen.queryByText('새 알림')).not.toBeOnTheScreen();
     expect(screen.getByLabelText(/^읽음, 주문 알림/)).toBeOnTheScreen();
   });

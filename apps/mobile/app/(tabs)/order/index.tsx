@@ -7,10 +7,11 @@ import { View } from 'react-native';
 
 import { ALL_CATEGORIES, CategoryTabs } from '@/components/order/CategoryTabs';
 import { CartBar } from '@/components/order/CartBar';
+import { StoreClosedBanner } from '@/components/order/StoreClosedBanner';
 import { MenuItemCard } from '@/components/order/MenuItemCard';
 import { QueryBoundary, isEmptyList } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useCategoriesQuery, useMenuQuery } from '@/fixtures/queries';
+import { useCategoriesQuery, useMenuQuery } from '@/hooks/useMenu';
 import { displayItemCount, displaySubtotal, joinCartLines } from '@/lib/displayTotals';
 import { combineStates } from '@/lib/queryState';
 import type { MenuCategory, MenuItem } from '@/models';
@@ -39,6 +40,7 @@ function MenuList({ categories, menu }: { categories: MenuCategory[]; menu: Menu
         ) : undefined
       }
     >
+      <StoreClosedBanner />
       <CategoryTabs categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
       {visible.length === 0 ? (
         <Text className="py-10 text-center text-muted-foreground">

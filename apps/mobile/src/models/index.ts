@@ -27,37 +27,23 @@ export type MenuItem = {
   name: string;
   description: string;
   price: number;
-  /** Only temperatures the store sells for this item (PRD 5.3 ORD-04). */
+  /** Only temperatures the store sells for this item (PRD 5.3 ORD-04). Empty: no temperature choice (OQ-16). */
   temperatures: Temperature[];
   isSoldOut: boolean;
+  /** Public photo URL, or null for the placeholder tile. */
+  imageUrl: string | null;
 };
 
+/** The cart keeps only what the customer chose; names and prices always come from the server menu. */
 export type CartLine = {
   menuItemId: string;
-  temperature: Temperature;
+  /** `null` for items that have no temperature choice. */
+  temperature: Temperature | null;
   quantity: number;
 };
 
-export type OrderLine = {
-  menuItemId: string;
-  name: string;
-  temperature: Temperature;
-  quantity: number;
-  unitPrice: number;
-};
-
-export type Order = {
-  id: string;
-  orderNumber: string;
-  placedAt: string;
-  status: OrderStatus;
-  orderType: OrderType;
-  lines: OrderLine[];
-  menuAmount: number;
-  couponDiscount: number;
-  pointsUsed: number;
-  paidAmount: number;
-};
+/** Server order snapshot (names and prices as they were when paid). Shared with the store apps via packages/api. */
+export type { OrderLineView as OrderLine, OrderView as Order } from '@theolive/api';
 
 export type Profile = { displayName: string; email: string; loginProvider: string };
 
@@ -79,31 +65,27 @@ export type BiometricStatus = (typeof BIOMETRIC_STATUS)[keyof typeof BIOMETRIC_S
 
 export type StampSummary = { count: number; goal: number };
 
-/** Sample inquiry entry shown in the inquiry list (channel is still an open decision). */
-export type Inquiry = { id: string; title: string; at: string; isAnswered: boolean };
-export type StampExchangeOption = { id: string; requiredStamps: number; title: string };
-export type PointSummary = { balance: number };
-
-export const COUPON_STATUS = { AVAILABLE: 'AVAILABLE', USED: 'USED', EXPIRED: 'EXPIRED' } as const;
-export type CouponStatus = (typeof COUPON_STATUS)[keyof typeof COUPON_STATUS];
-
-export type Coupon = {
-  id: string;
-  title: string;
-  /** Display-only amount; the server decides the real discount (PRD 15 open question 4). */
-  discountAmount: number;
-  expiresAt: string;
-  status: CouponStatus;
-};
+// Olive Stamps and reward coupons come from the server through packages/api; these are its view types.
+export type {
+  CouponBenefit,
+  CouponView as Coupon,
+  CouponWalletStatus as CouponStatus,
+  StampExchangeOptionView as StampExchangeOption,
+} from '@theolive/api';
+export { USER_COUPON_STATUS as COUPON_STATUS } from '@theolive/types';
+// Coupon Points come from the server too; separate from the stamp and coupon types above.
+export type { PointSummaryView as PointSummary } from '@theolive/api';
 
 /** Ledger rows: stamps and points are separate assets (PRD 5.5). */
-export type LedgerKind = 'EARN' | 'USE' | 'CANCEL';
+export type LedgerKind = 'EARN' | 'USE' | 'CANCEL' | 'EXPIRE';
 export type LedgerEntry = {
   id: string;
   kind: LedgerKind;
   label: string;
   amount: number;
   at: string;
+  /** Extra line under the date, e.g. when the points end. */
+  note?: string;
 };
 
 export const NOTIFICATION_KIND = {
@@ -121,11 +103,10 @@ export type AppNotification = {
   title: string;
   at: string;
   isRead: boolean;
+  /** Set for order and payment messages, so a tap can open that order. */
+  orderId: string | null;
 };
 
 export type Notice = { id: string; title: string; body: string; publishedAt: string };
 
 export type NotificationPreferences = { orderUpdates: boolean; notices: boolean };
-
-export type PointCodeResult =
-  { status: 'registered' } | { status: 'invalid' | 'duplicate' | 'expired' };

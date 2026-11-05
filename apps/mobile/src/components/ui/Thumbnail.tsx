@@ -1,5 +1,5 @@
-import { Cake, Coffee, CupSoda, Leaf, Milk, type LucideIcon } from 'lucide-react-native';
-import { View } from 'react-native';
+import { Coffee } from 'lucide-react-native';
+import { Image, View } from 'react-native';
 
 import { AppIcon } from './AppIcon';
 
@@ -12,29 +12,28 @@ const SIZE_CLASS = {
 } as const;
 const ICON_SIZE = { sm: 24, md: 32, xl: 40, lg: 96 } as const;
 
-const CATEGORY_ICON: Record<string, LucideIcon> = {
-  coffee: Coffee,
-  latte: Milk,
-  'non-coffee': CupSoda,
-  tea: Leaf,
-  dessert: Cake,
-};
+type Props = { size?: keyof typeof SIZE_CLASS; imageUrl?: string | null };
 
-type Props = { size?: keyof typeof SIZE_CLASS; categoryId?: string };
-
-/**
- * Placeholder until product photography ships from Storage (SA-04): a cream tile with a
- * category glyph. Swap for the real image with the same footprint.
- */
-export function Thumbnail({ size = 'md', categoryId }: Props) {
-  const icon = (categoryId ? CATEGORY_ICON[categoryId] : undefined) ?? Coffee;
+/** Product photo from Storage (SA-04), or a cream tile with a cup glyph when the item has no photo yet. */
+export function Thumbnail({ size = 'md', imageUrl = null }: Props) {
+  if (imageUrl) {
+    return (
+      <Image
+        source={{ uri: imageUrl }}
+        resizeMode="cover"
+        className={`${SIZE_CLASS[size]} bg-cream`}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
+    );
+  }
   return (
     <View
       className={`${SIZE_CLASS[size]} items-center justify-center bg-cream`}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <AppIcon icon={icon} tone="primary" size={ICON_SIZE[size]} />
+      <AppIcon icon={Coffee} tone="primary" size={ICON_SIZE[size]} />
     </View>
   );
 }

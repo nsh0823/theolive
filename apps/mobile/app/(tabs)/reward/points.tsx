@@ -6,7 +6,7 @@ import { PointBalanceCard } from '@/components/reward/PointBalanceCard';
 import { CtaButton } from '@/components/ui/CtaButton';
 import { QueryBoundary, isEmptyList } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { usePointLedgerQuery, usePointsQuery } from '@/fixtures/queries';
+import { usePointLedgerQuery, usePointsQuery } from '@/hooks/usePoints';
 
 /** RW-06: balance plus issue / use / cancel ledger. */
 export default function PointsScreen() {

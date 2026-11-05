@@ -15,6 +15,7 @@ export default function OrderLayout() {
       <Stack.Screen name="cart" options={{ title: '장바구니' }} />
       <Stack.Screen name="order-type" options={{ title: '주문 방식' }} />
       <Stack.Screen name="checkout" options={{ title: '결제하기' }} />
+      <Stack.Screen name="pay" options={{ title: '테스트 결제', headerLargeTitle: false }} />
       <Stack.Screen
         name="complete/[orderId]"
         options={{

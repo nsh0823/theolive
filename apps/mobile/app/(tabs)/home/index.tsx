@@ -10,15 +10,10 @@ import { ShortcutPills } from '@/components/home/ShortcutPills';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import {
-  useCouponsQuery,
-  useOrdersQuery,
-  usePointsQuery,
-  useProfileQuery,
-  useStampsQuery,
-} from '@/fixtures/queries';
+import { useOrdersQuery } from '@/hooks/useOrders';
+import { useProfileQuery } from '@/hooks/useProfileQuery';
+import { useRewardSummaryQuery } from '@/hooks/useRewardSummary';
 import { recentOrderLines } from '@/lib/reorder';
-import { combineStates } from '@/lib/queryState';
 
 const RECENT_LINE_LIMIT = 3;
 
@@ -26,8 +21,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const profile = useProfileQuery();
   const orders = useOrdersQuery();
-  const rewards = combineStates(useStampsQuery(), usePointsQuery());
-  const shortcuts = combineStates(rewards, useCouponsQuery());
+  const rewards = useRewardSummaryQuery();
 
   return (
     <Screen>
@@ -40,11 +34,11 @@ export default function HomeScreen() {
         <Text className="text-muted-foreground">오늘도 더올리브와 함께하세요.</Text>
       </View>
 
-      {shortcuts.status === 'success' ? (
+      {rewards.status === 'success' ? (
         <ShortcutPills
-          stamps={shortcuts.data[0][0]}
-          points={shortcuts.data[0][1]}
-          coupons={shortcuts.data[1]}
+          stamps={rewards.data.stamps}
+          points={rewards.data.points}
+          couponCount={rewards.data.couponCount}
         />
       ) : null}
 
@@ -63,7 +57,7 @@ export default function HomeScreen() {
       </View>
 
       <QueryBoundary state={rewards} emptyMessage="">
-        {([stamps, points]) => <RewardSummary stamps={stamps} points={points} />}
+        {({ stamps, points }) => <RewardSummary stamps={stamps} points={points} />}
       </QueryBoundary>
     </Screen>
   );

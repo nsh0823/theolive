@@ -1,3 +1,4 @@
+import { signInWithEmail, signOut, type EmailCredentials } from '@theolive/api';
 import { useMutation } from '@tanstack/react-query';
 
 import { useAuthContext } from '@/providers/AuthProvider';
@@ -7,22 +8,12 @@ export function useSession() {
   return useAuthContext();
 }
 
-type Credentials = { email: string; password: string };
-
 export function useSignIn() {
   return useMutation({
-    mutationFn: async ({ email, password }: Credentials) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    },
+    mutationFn: (credentials: EmailCredentials) => signInWithEmail(supabase, credentials),
   });
 }
 
 export function useSignOut() {
-  return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    },
-  });
+  return useMutation({ mutationFn: () => signOut(supabase) });
 }

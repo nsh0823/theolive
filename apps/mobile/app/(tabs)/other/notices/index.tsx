@@ -6,7 +6,7 @@ import { Pressable } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { QueryBoundary, isEmptyList } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useNoticesQuery } from '@/fixtures/queries';
+import { useNoticesQuery } from '@/hooks/useNotices';
 
 export default function NoticesScreen() {
   const router = useRouter();

@@ -1,5 +1,7 @@
-import { FIXTURE_MENU, FIXTURE_NOTIFICATIONS, FIXTURE_ORDERS } from '@/fixtures/data';
-import { filterNotifications, isNotificationRead, unreadCount } from '@/lib/notifications';
+import { makeOrder } from '../test-utils/testOrders';
+import { TEST_MENU } from '../test-utils/testMenu';
+import { filterNotifications, notificationOrderId, unreadCount } from '@/lib/notifications';
+import type { AppNotification } from '@/models';
 import { searchMenu } from '@/lib/menuSearch';
 import {
   INITIAL_PIN_FLOW,
@@ -47,10 +49,10 @@ describe('stampProgress', () => {
 
 describe('searchMenu', () => {
   it('matches name or description and ignores blank queries', () => {
-    expect(searchMenu(FIXTURE_MENU, '라떼').map((i) => i.id)).toContain('latte');
-    expect(searchMenu(FIXTURE_MENU, '스콘')).toHaveLength(1);
-    expect(searchMenu(FIXTURE_MENU, '   ')).toEqual([]);
-    expect(searchMenu(FIXTURE_MENU, '없는메뉴')).toEqual([]);
+    expect(searchMenu(TEST_MENU, '라떼').map((i) => i.id)).toContain('latte');
+    expect(searchMenu(TEST_MENU, '스콘')).toHaveLength(1);
+    expect(searchMenu(TEST_MENU, '   ')).toEqual([]);
+    expect(searchMenu(TEST_MENU, '없는메뉴')).toEqual([]);
   });
 });
 
@@ -72,32 +74,71 @@ describe('pin flow', () => {
   });
 });
 
+const NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 'n1',
+    kind: 'ORDER',
+    title: '주문이 접수되었어요. (A-34)',
+    at: '2026.11.04 13:51',
+    isRead: false,
+    orderId: 'o1',
+  },
+  {
+    id: 'n2',
+    kind: 'PAYMENT',
+    title: '6,000원 결제가 완료되었어요. (A-34)',
+    at: '2026.11.04 13:50',
+    isRead: true,
+    orderId: 'o1',
+  },
+  {
+    id: 'n3',
+    kind: 'STAMP',
+    title: '올리브 스탬프 1개가 적립되었어요.',
+    at: '2026.11.03 14:50',
+    isRead: false,
+    orderId: null,
+  },
+];
+
 describe('notifications', () => {
-  it('counts unread using server flag or local read marks', () => {
-    const unread = FIXTURE_NOTIFICATIONS.filter((n) => !n.isRead);
-    expect(unreadCount(FIXTURE_NOTIFICATIONS, [])).toBe(unread.length);
-    expect(
-      unreadCount(
-        FIXTURE_NOTIFICATIONS,
-        unread.map((n) => n.id),
-      ),
-    ).toBe(0);
-    expect(isNotificationRead(at(unread, 0), [at(unread, 0).id])).toBe(true);
+  it('counts unread by the server flag', () => {
+    expect(unreadCount(NOTIFICATIONS)).toBe(2);
+    expect(unreadCount([])).toBe(0);
   });
   it('filters by kind', () => {
-    expect(filterNotifications(FIXTURE_NOTIFICATIONS, 'STAMP')).toHaveLength(1);
-    expect(filterNotifications(FIXTURE_NOTIFICATIONS, 'all')).toHaveLength(
-      FIXTURE_NOTIFICATIONS.length,
-    );
+    expect(filterNotifications(NOTIFICATIONS, 'STAMP')).toHaveLength(1);
+    expect(filterNotifications(NOTIFICATIONS, 'all')).toHaveLength(NOTIFICATIONS.length);
+  });
+  it('opens an order only for order and payment messages', () => {
+    expect(notificationOrderId(at(NOTIFICATIONS, 0))).toBe('o1');
+    expect(notificationOrderId(at(NOTIFICATIONS, 1))).toBe('o1');
+    expect(notificationOrderId({ ...at(NOTIFICATIONS, 2), orderId: 'x' })).toBeNull();
   });
 });
 
 describe('reorder', () => {
+  const ORDERS = [
+    makeOrder({ id: 'new' }),
+    makeOrder({
+      id: 'rejected',
+      status: 'REJECTED',
+      lines: [
+        {
+          menuItemId: 'cold-brew',
+          name: '콜드브루',
+          temperature: 'ICE',
+          quantity: 1,
+          unitPrice: 5000,
+        },
+      ],
+    }),
+  ];
   it('lists recent lines newest first and skips rejected orders', () => {
-    const lines = recentOrderLines(FIXTURE_ORDERS, 10);
+    const lines = recentOrderLines(ORDERS, 10);
     expect(at(lines, 0).name).toBe('아메리카노');
     expect(lines.map((l) => l.name)).not.toContain('콜드브루');
-    expect(recentOrderLines(FIXTURE_ORDERS, 1)).toHaveLength(1);
+    expect(recentOrderLines(ORDERS, 1)).toHaveLength(1);
   });
   it('skips sold-out, missing, and unavailable-temperature lines', () => {
     const plan = planReorder(
@@ -107,7 +148,7 @@ describe('reorder', () => {
         { menuItemId: 'cold-brew', name: '콜드브루', temperature: 'HOT', quantity: 1 },
         { menuItemId: 'gone', name: '사라진 메뉴', temperature: 'HOT', quantity: 1 },
       ],
-      FIXTURE_MENU,
+      TEST_MENU,
     );
     expect(plan.add).toEqual([{ menuItemId: 'americano', temperature: 'ICE', quantity: 2 }]);
     expect(plan.skippedNames).toEqual(['바닐라 라떼', '콜드브루', '사라진 메뉴']);

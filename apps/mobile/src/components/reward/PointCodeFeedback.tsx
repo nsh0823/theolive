@@ -1,18 +1,15 @@
 import { Text } from '@theolive/ui/components/text';
 
-import type { PointCodeResult } from '@/models';
+import { userMessage } from '@/lib/errorMessage';
+import { formatWon } from '@/lib/format';
 
 import { Card } from '../ui/Card';
 
-const MESSAGE: Record<PointCodeResult['status'], string> = {
-  registered: '포인트가 적립되었어요. 잔액과 내역에서 확인해 보세요.',
-  invalid: '올바르지 않은 코드예요. 코드를 다시 확인해 주세요.',
-  duplicate: '이미 등록된 코드예요.',
-  expired: '유효기간이 지난 코드예요.',
-};
+/** Result of a point-code registration (PRD 5.5 RW-05): the credited points, or the reason it was refused. */
+export type PointCodeOutcome =
+  { status: 'registered'; amount: number } | { status: 'failed'; error: unknown };
 
-/** Result of a point-code registration (PRD 5.5 RW-05). */
-export function PointCodeFeedback({ result }: { result: PointCodeResult }) {
+export function PointCodeFeedback({ result }: { result: PointCodeOutcome }) {
   const isSuccess = result.status === 'registered';
   return (
     <Card
@@ -27,7 +24,11 @@ export function PointCodeFeedback({ result }: { result: PointCodeResult }) {
       >
         {isSuccess ? '등록 완료' : '등록 실패'}
       </Text>
-      <Text size="sm">{MESSAGE[result.status]}</Text>
+      <Text size="sm">
+        {result.status === 'registered'
+          ? `${formatWon(result.amount)}이 적립되었어요. 잔액과 내역에서 확인해 보세요.`
+          : userMessage(result.error)}
+      </Text>
     </Card>
   );
 }

@@ -6,7 +6,7 @@ import { useReorder } from '@/hooks/useReorder';
 import { OrderRow } from '@/components/other/OrderRow';
 import { QueryBoundary, isEmptyList } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useOrdersQuery } from '@/fixtures/queries';
+import { useOrdersQuery } from '@/hooks/useOrders';
 
 export default function OrdersScreen() {
   const router = useRouter();

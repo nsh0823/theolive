@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { useState } from 'react';
 
+import { StoreClosedBanner } from '@/components/order/StoreClosedBanner';
 import { AddToCartSheet } from '@/components/order/AddToCartSheet';
 import { CtaButton } from '@/components/ui/CtaButton';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
@@ -12,19 +13,23 @@ import { Screen } from '@/components/ui/Screen';
 import { Segmented } from '@/components/ui/Segmented';
 import { Thumbnail } from '@/components/ui/Thumbnail';
 import { Pill } from '@/components/ui/Pill';
-import { useMenuItemQuery } from '@/fixtures/queries';
+import { useMenuItemQuery } from '@/hooks/useMenu';
+import { useOrderAvailability } from '@/hooks/useStoreStatus';
 import { useRouteParam } from '@/hooks/useRouteParam';
 import { formatWon } from '@/lib/format';
-import { TEMPERATURE_LABEL } from '@/lib/labels';
+import { TEMPERATURE_LABEL, temperatureText } from '@/lib/labels';
 import type { MenuItem, Temperature } from '@/models';
 import { MAX_LINE_QUANTITY, MIN_LINE_QUANTITY, useCartStore } from '@/store/useCartStore';
 
 function ItemDetail({ item }: { item: MenuItem }) {
   const router = useRouter();
   const addLine = useCartStore((state) => state.addLine);
-  const [temperature, setTemperature] = useState<Temperature>(item.temperatures[0] ?? 'HOT');
+  // Items without a temperature choice (OQ-16) are added with no temperature.
+  const [temperature, setTemperature] = useState<Temperature | null>(item.temperatures[0] ?? null);
   const [quantity, setQuantity] = useState(MIN_LINE_QUANTITY);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { canOrder } = useOrderAvailability();
+  const isUnavailable = item.isSoldOut || !canOrder;
 
   const addToCart = () => {
     addLine(item.id, temperature, quantity);
@@ -58,11 +63,11 @@ function ItemDetail({ item }: { item: MenuItem }) {
                 label="담기"
                 variant="outline"
                 onPress={addToCart}
-                isDisabled={item.isSoldOut}
+                isDisabled={isUnavailable}
               />
             </View>
             <View className="flex-1">
-              <CtaButton label="주문하기" onPress={orderNow} isDisabled={item.isSoldOut} />
+              <CtaButton label="주문하기" onPress={orderNow} isDisabled={isUnavailable} />
             </View>
           </View>
         </>
@@ -70,7 +75,9 @@ function ItemDetail({ item }: { item: MenuItem }) {
     >
       <AddToCartSheet
         visible={isSheetOpen}
-        summary={`${item.name} · ${TEMPERATURE_LABEL[temperature]} · ${quantity}개`}
+        summary={[item.name, temperatureText(temperature), `${quantity}개`]
+          .filter((part) => part !== '')
+          .join(' · ')}
         onGoToCart={() => {
           setIsSheetOpen(false);
           router.replace('/order/cart');
@@ -80,8 +87,9 @@ function ItemDetail({ item }: { item: MenuItem }) {
           router.back();
         }}
       />
+      <StoreClosedBanner />
       <View className="-mx-5 -mt-2">
-        <Thumbnail size="lg" categoryId={item.categoryId} />
+        <Thumbnail size="lg" imageUrl={item.imageUrl} />
       </View>
       <View className="gap-2">
         <Heading size="2xl" accessibilityRole="header">
@@ -93,12 +101,14 @@ function ItemDetail({ item }: { item: MenuItem }) {
         </Text>
         {item.isSoldOut ? <Pill label="품절된 메뉴예요" tone="danger" /> : null}
       </View>
-      <Segmented
-        groupLabel="온도 선택"
-        value={temperature}
-        onChange={setTemperature}
-        options={item.temperatures.map((value) => ({ value, label: TEMPERATURE_LABEL[value] }))}
-      />
+      {item.temperatures.length > 0 && temperature !== null ? (
+        <Segmented
+          groupLabel="온도 선택"
+          value={temperature}
+          onChange={setTemperature}
+          options={item.temperatures.map((value) => ({ value, label: TEMPERATURE_LABEL[value] }))}
+        />
+      ) : null}
     </Screen>
   );
 }

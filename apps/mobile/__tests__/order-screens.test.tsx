@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import CartScreen from '../app/(tabs)/order/cart';
 import OrderScreen from '../app/(tabs)/order/index';
 import { useCartStore } from '@/store/useCartStore';
+import { useCategoriesQuery, useMenuQuery } from '@/hooks/useMenu';
+import { categoriesQueryDefault, menuQueryDefault } from '../test-utils/testMenu';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -12,6 +14,50 @@ jest.mock('expo-router', () => ({
 beforeEach(() => {
   mockPush.mockClear();
   useCartStore.setState({ lines: [], orderType: 'TAKEOUT' });
+});
+
+const mockedMenu = jest.mocked(useMenuQuery);
+const mockedCategories = jest.mocked(useCategoriesQuery);
+
+describe('Order screen states', () => {
+  afterEach(() => {
+    mockedMenu.mockImplementation(menuQueryDefault);
+    mockedCategories.mockImplementation(categoriesQueryDefault);
+  });
+
+  it('shows loading while the menu is fetched', async () => {
+    mockedMenu.mockReturnValue({ status: 'loading' });
+    await render(<OrderScreen />);
+    expect(screen.getByLabelText('불러오는 중이에요')).toBeOnTheScreen();
+  });
+
+  it('shows the disconnected state and refetches when the customer retries', async () => {
+    const refetch = jest.fn();
+    mockedMenu.mockReturnValue({ status: 'offline', refetch });
+    await render(<OrderScreen />);
+    expect(screen.getByText('인터넷에 연결되어 있지 않아요')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('다시 연결하기'));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows an error with retry for a server failure', async () => {
+    const refetch = jest.fn();
+    mockedCategories.mockReturnValue({
+      status: 'error',
+      message: '불러오지 못했어요.',
+      refetch,
+    });
+    await render(<OrderScreen />);
+    expect(screen.getByText('불러오지 못했어요.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('다시 시도'));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the empty state when no item is orderable', async () => {
+    mockedMenu.mockReturnValue({ status: 'success', data: [] });
+    await render(<OrderScreen />);
+    expect(screen.getByText('지금 주문할 수 있는 메뉴가 없어요.')).toBeOnTheScreen();
+  });
 });
 
 describe('Order screen', () => {

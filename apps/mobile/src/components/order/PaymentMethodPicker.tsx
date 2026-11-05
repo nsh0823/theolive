@@ -1,7 +1,7 @@
 import { Text } from '@theolive/ui/components/text';
 import { Pressable, View } from 'react-native';
 
-import { PAYMENT_METHOD_LABEL } from '@/lib/labels';
+import { PAYMENT_METHOD_LABEL, TEST_PAYMENT_LABEL } from '@/lib/labels';
 import { PAYMENT_METHOD, type PaymentMethod } from '@/models';
 
 import { FormSection } from '../ui/FormSection';
@@ -17,8 +17,8 @@ const METHODS: PaymentMethod[] = [
 type Props = { selected: PaymentMethod | null; onSelect: (method: PaymentMethod) => void };
 
 /**
- * UI only. Which methods are offered, and whether each works, is decided by the PG contract;
- * nothing here starts a payment.
+ * Which methods are offered, and whether each works, is decided by the PG contract. Until then every
+ * method goes through the TEST payment sheet (OQ-21) and is labelled as such.
  */
 export function PaymentMethodPicker({ selected, onSelect }: Props) {
   return (
@@ -39,12 +39,15 @@ export function PaymentMethodPicker({ selected, onSelect }: Props) {
               <Text className={`flex-1 ${isSelected ? 'font-bold' : ''}`}>
                 {PAYMENT_METHOD_LABEL[method]}
               </Text>
+              <Text size="xs" className="font-semibold text-muted-foreground">
+                {TEST_PAYMENT_LABEL}
+              </Text>
             </Pressable>
           );
         })}
       </View>
       <Text size="xs" className="text-muted-foreground">
-        결제 연동 전 화면이에요. 실제 사용 가능한 결제수단은 PG 계약 확정 후 정해져요.
+        테스트 결제예요. 실제로 돈이 빠져나가지 않아요. 실제 결제수단은 PG 계약 확정 후 정해져요.
       </Text>
     </FormSection>
   );

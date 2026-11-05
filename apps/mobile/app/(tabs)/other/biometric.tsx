@@ -5,7 +5,7 @@ import { BiometricUnavailable } from '@/components/other/BiometricUnavailable';
 import { ListGroup } from '@/components/ui/ListGroup';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useBiometricStatusQuery } from '@/fixtures/queries';
+import { useBiometricStatusQuery } from '@/lib/biometricStatus';
 import { BIOMETRIC_STATUS } from '@/models';
 import { useAppLockStore } from '@/store/useAppLockStore';
 

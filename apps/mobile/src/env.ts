@@ -14,4 +14,13 @@ if (missing.length > 0) {
   );
 }
 
-export const env = raw as { [K in keyof typeof raw]: string };
+const required = raw as { [K in keyof typeof raw]: string };
+
+export const env = {
+  ...required,
+  /**
+   * Local/dev only (OQ-3): shows the email/password form for seeded test customers. Needs a dev build
+   * (`__DEV__`) AND this flag, so it can never appear in a production bundle by accident.
+   */
+  enableDevLogin: process.env.EXPO_PUBLIC_ENABLE_DEV_LOGIN === 'true',
+};

@@ -11,7 +11,8 @@ import { CtaButton } from '@/components/ui/CtaButton';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { useCouponsQuery, usePointsQuery, useStampsQuery } from '@/fixtures/queries';
+import { usePointsQuery } from '@/hooks/usePoints';
+import { useCouponsQuery, useStampsQuery } from '@/hooks/useRewards';
 import { COUPON_STATUS } from '@/models';
 
 const COUPON_PREVIEW_LIMIT = 2;

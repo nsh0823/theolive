@@ -2,18 +2,14 @@ import { useRouter } from 'expo-router';
 import { Bell } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
-import { useNotificationsQuery } from '@/fixtures/queries';
-import { unreadCount } from '@/lib/notifications';
-import { useNotificationStore } from '@/store/useNotificationStore';
+import { useUnreadCount } from '@/hooks/useNotifications';
 
 import { AppIcon } from '../ui/AppIcon';
 
 /** HOME-01: header entry to the notification list; a dot marks unread (label says so too). */
 export function NotificationBell() {
   const router = useRouter();
-  const state = useNotificationsQuery();
-  const readIds = useNotificationStore((store) => store.readIds);
-  const unread = state.status === 'success' ? unreadCount(state.data, readIds) : 0;
+  const unread = useUnreadCount();
   return (
     <Pressable
       onPress={() => router.push('/home/notifications')}

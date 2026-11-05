@@ -2,7 +2,8 @@ import { Text } from '@theolive/ui/components/text';
 import { Ticket } from 'lucide-react-native';
 import { View } from 'react-native';
 
-import { formatWon } from '@/lib/format';
+import { formatCouponExpiry } from '@/lib/format';
+import { couponBenefitLabel } from '@/lib/labels';
 import { COUPON_STATUS, type Coupon, type CouponStatus } from '@/models';
 
 import { AppIcon } from '../ui/AppIcon';
@@ -21,18 +22,18 @@ export function CouponCard({ coupon }: { coupon: Coupon }) {
     <View
       className={`flex-row items-center gap-4 rounded-2xl bg-card p-4 ${isAvailable ? '' : 'opacity-60'}`}
       accessible
-      accessibilityLabel={`${coupon.title}, ${formatWon(coupon.discountAmount)} 할인, ${COUPON_STATUS_LABEL[coupon.status]}, 유효기간 ${coupon.expiresAt}`}
+      accessibilityLabel={`${coupon.title}, ${couponBenefitLabel(coupon)}, ${COUPON_STATUS_LABEL[coupon.status]}, 유효기간 ${formatCouponExpiry(coupon.expiresAt)}`}
     >
       <View className="h-14 w-14 items-center justify-center rounded-full bg-secondary">
         <AppIcon icon={Ticket} tone="primary" size={24} />
       </View>
       <View className="flex-1 gap-1">
         <Text size="lg" className="font-bold text-primary">
-          {formatWon(coupon.discountAmount)} 할인
+          {couponBenefitLabel(coupon)}
         </Text>
         <Text className="font-semibold">{coupon.title}</Text>
         <Text size="sm" className="text-muted-foreground">
-          유효기간 {coupon.expiresAt}
+          유효기간 {formatCouponExpiry(coupon.expiresAt)}까지
         </Text>
       </View>
       <Pill label={COUPON_STATUS_LABEL[coupon.status]} tone={isAvailable ? 'primary' : 'neutral'} />

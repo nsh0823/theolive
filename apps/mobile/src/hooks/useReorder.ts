@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
-import { useMenuQuery } from '@/fixtures/queries';
-import { planReorder, type RecentOrderLine } from '@/lib/reorder';
+import { useMenuQuery } from '@/hooks/useMenu';
+import { planReorder } from '@/lib/reorder';
+import type { Temperature } from '@/models';
 import { useCartStore } from '@/store/useCartStore';
 
 /** Quick reorder: re-adds past lines that are still orderable, then opens the cart. */
@@ -11,7 +12,14 @@ export function useReorder() {
   const menu = useMenuQuery();
   const addLines = useCartStore((state) => state.addLines);
 
-  return (lines: Pick<RecentOrderLine, 'menuItemId' | 'name' | 'temperature' | 'quantity'>[]) => {
+  return (
+    lines: {
+      menuItemId: string | null;
+      name: string;
+      temperature: Temperature | null;
+      quantity: number;
+    }[],
+  ) => {
     if (menu.status !== 'success') {
       Alert.alert('메뉴를 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
       return;

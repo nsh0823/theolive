@@ -2,7 +2,7 @@ import { Text } from '@theolive/ui/components/text';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { useReorder } from '@/hooks/useReorder';
-import { TEMPERATURE_LABEL } from '@/lib/labels';
+import { lineSummary } from '@/lib/labels';
 import type { RecentOrderLine } from '@/lib/reorder';
 
 import { Thumbnail } from '../ui/Thumbnail';
@@ -26,7 +26,7 @@ export function RecentOrderList({ lines }: { lines: RecentOrderLine[] }) {
                 {line.name}
               </Text>
               <Text size="sm" className="text-muted-foreground">
-                {TEMPERATURE_LABEL[line.temperature]} | {line.quantity}개
+                {lineSummary(line.temperature, line.quantity)}
               </Text>
               <Text size="xs" className="text-muted-foreground">
                 {line.placedAt}

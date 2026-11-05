@@ -8,7 +8,7 @@ import { MenuItemCard } from '@/components/order/MenuItemCard';
 import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyView } from '@/components/ui/StateViews';
-import { useMenuQuery } from '@/fixtures/queries';
+import { useMenuQuery } from '@/hooks/useMenu';
 import { searchMenu } from '@/lib/menuSearch';
 import type { MenuItem } from '@/models';
 

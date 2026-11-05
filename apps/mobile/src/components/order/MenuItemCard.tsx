@@ -24,7 +24,8 @@ function Tag({ label, danger = false }: { label: string; danger?: boolean }) {
 /** Flat menu row: round thumbnail, tags, name, description, price. No card chrome. */
 export function MenuItemCard({ item, onPress }: Props) {
   const temperatures = item.temperatures.map((t) => TEMPERATURE_LABEL[t]).join(' / ');
-  const label = `${item.name}, ${formatWon(item.price)}, ${temperatures}${item.isSoldOut ? ', 품절' : ''}`;
+  const temperatureNote = temperatures === '' ? '' : `, ${temperatures}`;
+  const label = `${item.name}, ${formatWon(item.price)}${temperatureNote}${item.isSoldOut ? ', 품절' : ''}`;
   return (
     <Pressable
       onPress={() => onPress(item)}
@@ -32,10 +33,11 @@ export function MenuItemCard({ item, onPress }: Props) {
       accessibilityLabel={label}
       className={`min-h-24 flex-row items-center gap-4 py-2 ${item.isSoldOut ? 'opacity-60' : ''}`}
     >
-      <Thumbnail categoryId={item.categoryId} />
+      <Thumbnail imageUrl={item.imageUrl} />
       <View className="flex-1 gap-1">
         <View className="flex-row gap-1.5">
-          {item.isSoldOut ? <Tag label="품절" danger /> : <Tag label={temperatures} />}
+          {item.isSoldOut ? <Tag label="품절" danger /> : null}
+          {!item.isSoldOut && temperatures !== '' ? <Tag label={temperatures} /> : null}
         </View>
         <Text size="lg" className="font-bold" numberOfLines={1}>
           {item.name}
