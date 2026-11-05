@@ -1,40 +1,31 @@
 import { Text } from '@theolive/ui/components/text';
-import { useRouter } from 'expo-router';
-import { MessageCircle } from 'lucide-react-native';
 
-import { InquiryRow } from '@/components/other/InquiryRow';
 import { Card } from '@/components/ui/Card';
-import { CtaButton } from '@/components/ui/CtaButton';
-import { QueryBoundary, isEmptyList } from '@/components/ui/QueryBoundary';
+import { QueryBoundary } from '@/components/ui/QueryBoundary';
 import { Screen } from '@/components/ui/Screen';
-import { useInquiriesQuery, useInquiryChannelQuery } from '@/fixtures/queries';
+import { INQUIRY_CHANNEL } from '@/content/inquiry';
+import { useStorePhoneQuery } from '@/hooks/useStorePhone';
 
-/** OTH-04 (P1): the inquiry channel is an open decision, so the list is sample data. */
+/** OTH-04: no in-app inquiry system in the MVP; the member is pointed to the store's phone. */
 export default function InquiryScreen() {
-  const router = useRouter();
-  const channel = useInquiryChannelQuery();
-  const inquiries = useInquiriesQuery();
+  const phone = useStorePhoneQuery();
   return (
-    <Screen
-      footer={<CtaButton label="문의하기" onPress={() => router.push('/other/inquiry-new')} />}
-    >
-      <QueryBoundary state={channel} emptyMessage="">
-        {(info) => (
-          <Card className="gap-1 bg-cream">
-            <Text className="font-semibold">{info.label}</Text>
+    <Screen>
+      <Card className="gap-1 bg-cream">
+        <Text className="font-semibold">{INQUIRY_CHANNEL.label}</Text>
+        <Text size="sm" className="text-muted-foreground">
+          {INQUIRY_CHANNEL.description}
+        </Text>
+      </Card>
+      <QueryBoundary state={phone} emptyMessage="">
+        {(number) => (
+          <Card className="gap-1" accessible accessibilityLabel={`매장 전화번호 ${number}`}>
             <Text size="sm" className="text-muted-foreground">
-              {info.description}
+              매장 전화번호
             </Text>
+            <Text className="text-lg font-bold text-primary">{number}</Text>
           </Card>
         )}
-      </QueryBoundary>
-      <QueryBoundary
-        state={inquiries}
-        isEmpty={isEmptyList}
-        emptyMessage="등록한 문의가 없어요."
-        emptyIcon={MessageCircle}
-      >
-        {(list) => list.map((inquiry) => <InquiryRow key={inquiry.id} inquiry={inquiry} />)}
       </QueryBoundary>
     </Screen>
   );
