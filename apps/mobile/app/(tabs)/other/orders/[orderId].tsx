@@ -1,0 +1,47 @@
+import { Heading } from '@theolive/ui/components/heading';
+import { Text } from '@theolive/ui/components/text';
+
+import { AmountSummary } from '@/components/order/AmountSummary';
+import { OrderLinesCard } from '@/components/order/OrderLinesCard';
+import { OrderStatusTracker } from '@/components/order/OrderStatusTracker';
+import { QueryBoundary } from '@/components/ui/QueryBoundary';
+import { Screen } from '@/components/ui/Screen';
+import { useOrderQuery } from '@/fixtures/queries';
+import { useRouteParam } from '@/hooks/useRouteParam';
+
+/** OTH-02: items, options, order type, payment breakdown. */
+export default function OrderDetailScreen() {
+  const orderId = useRouteParam('orderId') ?? '';
+  const state = useOrderQuery(orderId);
+  return (
+    <QueryBoundary
+      state={state}
+      isEmpty={(order) => order === null}
+      emptyMessage="주문을 찾을 수 없어요."
+    >
+      {(order) =>
+        order ? (
+          <Screen>
+            <Text className="text-muted-foreground">
+              {order.placedAt} · 주문번호 {order.orderNumber}
+            </Text>
+            <OrderStatusTracker status={order.status} />
+            <Heading size="sm" accessibilityRole="header">
+              주문 메뉴
+            </Heading>
+            <OrderLinesCard lines={order.lines} orderType={order.orderType} />
+            <Heading size="sm" accessibilityRole="header">
+              결제 내역
+            </Heading>
+            <AmountSummary
+              menuAmount={order.menuAmount}
+              couponDiscount={order.couponDiscount}
+              pointsUsed={order.pointsUsed}
+              finalAmount={order.paidAmount}
+            />
+          </Screen>
+        ) : null
+      }
+    </QueryBoundary>
+  );
+}

@@ -22,6 +22,9 @@ module.exports = {
   setupFiles: ['./jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // The package's `react-native` export points at an .mjs build Jest cannot transform.
+    '^lucide-react-native$':
+      '<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js',
   },
   // `\.pnpm` is skipped so the check applies to the real package path inside pnpm's store.
   transformIgnorePatterns: [`node_modules/(?!\\.pnpm|${transpiled.join('|')})`],

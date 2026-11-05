@@ -10,7 +10,9 @@ jest.mock('@/services/supabase', () => ({
 }));
 
 function renderScreen() {
-  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { mutations: { retry: false, gcTime: 0 }, queries: { gcTime: 0 } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <SignInScreen />
@@ -19,10 +21,26 @@ function renderScreen() {
 }
 
 describe('SignInScreen', () => {
-  it('signs in with the entered credentials', async () => {
+  it('offers the four PRD social providers', async () => {
     await renderScreen();
-    expect(screen.getByText('Welcome')).toBeOnTheScreen();
+    for (const label of [
+      '카카오로 계속하기',
+      '네이버로 계속하기',
+      'Google로 계속하기',
+      'Apple로 계속하기',
+    ]) {
+      expect(screen.getByLabelText(label)).toBeOnTheScreen();
+    }
+  });
 
+  it('tells the user social login is not connected yet', async () => {
+    await renderScreen();
+    await fireEvent.press(screen.getByLabelText('카카오로 계속하기'));
+    expect(screen.getByText('소셜 로그인은 아직 연결되지 않았어요.')).toBeOnTheScreen();
+  });
+
+  it('keeps the dev-only email sign-in working', async () => {
+    await renderScreen();
     await fireEvent.changeText(screen.getByPlaceholderText('Email'), 'test@example.com');
     await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
     await fireEvent.press(screen.getByText('Sign In'));

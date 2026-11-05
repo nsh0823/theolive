@@ -5,3 +5,8 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 if (typeof window !== 'undefined' && !window.screen) {
   Object.defineProperty(window, 'screen', { value: {}, configurable: true });
 }
+
+jest.mock(
+  'react-native-safe-area-context',
+  () => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);

@@ -11,8 +11,8 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().colorMode).toBe('system');
   });
 
-  it('updates the color mode', () => {
-    act(() => useAppStore.getState().setColorMode('dark'));
+  it('updates the color mode', async () => {
+    await act(() => useAppStore.getState().setColorMode('dark'));
     expect(useAppStore.getState().colorMode).toBe('dark');
   });
 });

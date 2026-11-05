@@ -1,19 +1,6 @@
-import { Heading } from '@theolive/ui/components/heading';
-import { Text } from '@theolive/ui/components/text';
-import { VStack } from '@theolive/ui/components/vstack';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect } from 'expo-router';
 
-import { useSession } from '@/hooks/useAuth';
-
-export default function HomeScreen() {
-  const { session } = useSession();
-
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      <VStack className="gap-2 p-6">
-        <Heading size="2xl">Home</Heading>
-        <Text className="text-muted-foreground">Signed in as {session?.user.email}</Text>
-      </VStack>
-    </SafeAreaView>
-  );
+// Legacy entry route: Home now lives in the `home` stack (see (tabs)/_layout.tsx).
+export default function TabsIndex() {
+  return <Redirect href="/home" />;
 }

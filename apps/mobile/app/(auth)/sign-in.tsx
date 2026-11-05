@@ -1,54 +1,52 @@
-import { Button, ButtonSpinner, ButtonText } from '@theolive/ui/components/button';
-import { Heading } from '@theolive/ui/components/heading';
-import { Input, InputField } from '@theolive/ui/components/input';
 import { Text } from '@theolive/ui/components/text';
-import { VStack } from '@theolive/ui/components/vstack';
 import { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useSignIn } from '@/hooks/useAuth';
+import { DevEmailSignIn } from '@/components/auth/DevEmailSignIn';
+import { SOCIAL_PROVIDERS, SocialLoginButton } from '@/components/auth/SocialLoginButton';
+import { BrandMark } from '@/components/ui/BrandMark';
 
+/** AUTH-01 UI. OAuth is not wired yet, so provider buttons only surface a notice. */
 export default function SignInScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const signIn = useSignIn();
+  const [notice, setNotice] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <VStack className="flex-1 justify-center gap-4 px-6">
-        <Heading size="2xl">Welcome</Heading>
-        <Text className="text-muted-foreground">Sign in to continue to theolive.</Text>
-
-        <Input>
-          <InputField
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-        </Input>
-        <Input>
-          <InputField
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-          />
-        </Input>
-
-        {signIn.error ? <Text className="text-destructive">{signIn.error.message}</Text> : null}
-
-        <Button
-          onPress={() => signIn.mutate({ email, password })}
-          isDisabled={signIn.isPending || !email || !password}
+    <View
+      className="flex-1 bg-background"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1"
+      >
+        <ScrollView
+          contentContainerClassName="flex-grow justify-center gap-10 p-6"
+          keyboardShouldPersistTaps="handled"
         >
-          {signIn.isPending ? <ButtonSpinner /> : null}
-          <ButtonText>Sign In</ButtonText>
-        </Button>
-      </VStack>
-    </SafeAreaView>
+          <BrandMark />
+          <View className="gap-3">
+            {SOCIAL_PROVIDERS.map((provider) => (
+              <SocialLoginButton
+                key={provider.id}
+                label={provider.label}
+                onPress={() => setNotice('소셜 로그인은 아직 연결되지 않았어요.')}
+              />
+            ))}
+            {notice ? (
+              <Text
+                size="sm"
+                className="text-center text-muted-foreground"
+                accessibilityLiveRegion="polite"
+              >
+                {notice}
+              </Text>
+            ) : null}
+          </View>
+          {__DEV__ ? <DevEmailSignIn /> : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }

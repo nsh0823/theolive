@@ -2,7 +2,7 @@ appId: com.anonymous.theolive
 ---
 - launchApp:
     clearState: true
-- assertVisible: 'Welcome'
+- assertVisible: '더올리브'
 - assertVisible: 'Sign In'
 - tapOn: 'Email'
 - inputText: 'test@example.com'
