@@ -1,32 +1,51 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import { useState, type PropsWithChildren, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-/** DESIGN.md: bottom clearance so sticky totals never overlap content. */
-const FOOTER_CLEARANCE = 88;
+import { CONTENT_BOTTOM_GAP, tabBarClearance } from '@/lib/layout';
 
-type Props = PropsWithChildren<{ footer?: ReactNode }>;
+type Props = PropsWithChildren<{
+  /** Sticky bar pinned above the tab bar (totals, primary actions). */
+  footer?: ReactNode;
+  /** Set false only for screens outside the tab navigator (no tab bar to clear). */
+  hasTabBar?: boolean;
+  /** Tighter horizontal rhythm for flat lists that draw their own padding. */
+  contentClassName?: string;
+}>;
 
 /**
- * Scrolling page under a native header. `contentInsetAdjustmentBehavior` lets iOS
- * place content below the native (large-title) header.
+ * Scrolling page under a native (large-title) header, on the #EFF4F8 canvas. The scroll content
+ * reserves room for the floating tab bar and for the measured sticky footer, so the last
+ * element is always reachable. The footer itself sits above the tab bar, not under it.
  */
-export function Screen({ children, footer }: Props) {
+export function Screen({
+  children,
+  footer,
+  hasTabBar = true,
+  contentClassName = 'gap-6 px-5 pt-2',
+}: Props) {
   const insets = useSafeAreaInsets();
+  const [footerHeight, setFooterHeight] = useState(0);
+  const bottomClearance = hasTabBar ? tabBarClearance(insets.bottom) : insets.bottom;
+  const scrollPadding = bottomClearance + (footer ? footerHeight : 0) + CONTENT_BOTTOM_GAP;
+
   return (
     <View className="flex-1 bg-background">
       <ScrollView
+        testID="screen-scroll"
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="gap-5 p-4"
-        contentContainerStyle={{ paddingBottom: footer ? FOOTER_CLEARANCE + insets.bottom : 16 }}
+        contentContainerClassName={contentClassName}
+        contentContainerStyle={{ paddingBottom: scrollPadding }}
       >
         {children}
       </ScrollView>
       {footer ? (
         <View
-          className="absolute inset-x-0 bottom-0 gap-3 bg-card px-4 pt-3 shadow-lg"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          testID="screen-footer"
+          onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          className="absolute inset-x-0 gap-3 border-t border-border bg-card px-5 pb-3 pt-3"
+          style={{ bottom: bottomClearance }}
         >
           {footer}
         </View>

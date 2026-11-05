@@ -1,22 +1,40 @@
-import { Coffee } from 'lucide-react-native';
+import { Cake, Coffee, CupSoda, Leaf, Milk, type LucideIcon } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { AppIcon } from './AppIcon';
 
-const SIZE_CLASS = { md: 'h-20 w-20', sm: 'h-14 w-14', lg: 'h-48 w-full' } as const;
-const ICON_SIZE = { md: 28, sm: 22, lg: 48 } as const;
+// Round tiles for list rows (menu, cart, quick order); `lg` is the full-bleed detail hero.
+const SIZE_CLASS = {
+  sm: 'h-14 w-14 rounded-full',
+  md: 'h-20 w-20 rounded-full',
+  xl: 'h-24 w-24 rounded-full',
+  lg: 'h-72 w-full',
+} as const;
+const ICON_SIZE = { sm: 24, md: 32, xl: 40, lg: 96 } as const;
 
-type Props = { size?: keyof typeof SIZE_CLASS };
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  coffee: Coffee,
+  latte: Milk,
+  'non-coffee': CupSoda,
+  tea: Leaf,
+  dessert: Cake,
+};
 
-/** Placeholder until product images ship from Storage (SA-04). */
-export function Thumbnail({ size = 'md' }: Props) {
+type Props = { size?: keyof typeof SIZE_CLASS; categoryId?: string };
+
+/**
+ * Placeholder until product photography ships from Storage (SA-04): a cream tile with a
+ * category glyph. Swap for the real image with the same footprint.
+ */
+export function Thumbnail({ size = 'md', categoryId }: Props) {
+  const icon = (categoryId ? CATEGORY_ICON[categoryId] : undefined) ?? Coffee;
   return (
     <View
-      className={`${SIZE_CLASS[size]} items-center justify-center rounded-md bg-secondary`}
+      className={`${SIZE_CLASS[size]} items-center justify-center bg-cream`}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <AppIcon icon={Coffee} tone="primary" size={ICON_SIZE[size]} />
+      <AppIcon icon={icon} tone="primary" size={ICON_SIZE[size]} />
     </View>
   );
 }

@@ -6,8 +6,8 @@ export function ChipRow({ children }: PropsWithChildren) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerClassName="gap-2 px-4 py-1"
-      className="-mx-4 grow-0"
+      contentContainerClassName="gap-2 px-5 py-1"
+      className="-mx-5 grow-0"
     >
       {children}
     </ScrollView>

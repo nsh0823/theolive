@@ -12,39 +12,58 @@ type Props = {
   itemLabel: string;
 };
 
-/** DESIGN.md stepper: Pale Olive pill, 44pt buttons. */
-export function QuantityStepper({ value, min, max, onChange, itemLabel }: Props) {
-  const canDecrease = value > min;
-  const canIncrease = value < max;
+type StepProps = {
+  icon: typeof Plus;
+  enabled: boolean;
+  label: string;
+  onPress: () => void;
+};
+
+/** 44pt touch target around a 32pt outlined circle. */
+function StepButton({ icon, enabled, label, onPress }: StepProps) {
   return (
-    <View className="flex-row items-center rounded-full bg-secondary">
-      <Pressable
-        onPress={() => onChange(value - 1)}
-        disabled={!canDecrease}
-        accessibilityRole="button"
-        accessibilityLabel={`${itemLabel} 수량 줄이기`}
-        accessibilityState={{ disabled: !canDecrease }}
-        className={`h-11 w-11 items-center justify-center ${canDecrease ? '' : 'opacity-40'}`}
+    <Pressable
+      onPress={onPress}
+      disabled={!enabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !enabled }}
+      className="h-11 w-11 items-center justify-center"
+    >
+      <View
+        className={`h-8 w-8 items-center justify-center rounded-full border ${
+          enabled ? 'border-foreground' : 'border-sage opacity-50'
+        }`}
       >
-        <AppIcon icon={Minus} />
-      </Pressable>
+        <AppIcon icon={icon} size={18} tone={enabled ? 'foreground' : 'muted'} />
+      </View>
+    </Pressable>
+  );
+}
+
+/** Outlined round -/+ buttons with a plain centered count. */
+export function QuantityStepper({ value, min, max, onChange, itemLabel }: Props) {
+  return (
+    <View className="flex-row items-center">
+      <StepButton
+        icon={Minus}
+        enabled={value > min}
+        label={`${itemLabel} 수량 줄이기`}
+        onPress={() => onChange(value - 1)}
+      />
       <Text
-        className="min-w-8 text-center font-bold"
+        className="min-w-8 text-center text-lg font-bold"
         accessibilityLabel={`수량 ${value}개`}
         accessibilityLiveRegion="polite"
       >
         {value}
       </Text>
-      <Pressable
+      <StepButton
+        icon={Plus}
+        enabled={value < max}
+        label={`${itemLabel} 수량 늘리기`}
         onPress={() => onChange(value + 1)}
-        disabled={!canIncrease}
-        accessibilityRole="button"
-        accessibilityLabel={`${itemLabel} 수량 늘리기`}
-        accessibilityState={{ disabled: !canIncrease }}
-        className={`h-11 w-11 items-center justify-center ${canIncrease ? '' : 'opacity-40'}`}
-      >
-        <AppIcon icon={Plus} />
-      </Pressable>
+      />
     </View>
   );
 }

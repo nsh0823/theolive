@@ -16,8 +16,12 @@ export function AppStack({ children, ...props }: ComponentProps<typeof Stack>) {
       {...props}
       screenOptions={{
         headerTintColor: tint,
-        headerTitleStyle: { color: titleColor },
+        headerTitleStyle: { color: titleColor, fontWeight: '700' },
+        // Starbucks-style pattern: big, bold, left-aligned page titles on every screen.
+        headerLargeTitle: true,
+        headerLargeTitleShadowVisible: false,
         headerLargeTitleStyle: { color: titleColor },
+        headerLargeStyle: { backgroundColor: canvas },
         headerStyle: { backgroundColor: canvas },
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',

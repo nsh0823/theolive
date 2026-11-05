@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { QueryState } from '@/lib/queryState';
 
-import { EmptyView, ErrorView, LoadingView } from './StateViews';
+import { EmptyView, ErrorView, LoadingView, OfflineView } from './StateViews';
 
 type Props<T> = {
   state: QueryState<T>;
@@ -26,6 +26,7 @@ export function QueryBoundary<T>({
   children,
 }: Props<T>) {
   if (state.status === 'loading') return <LoadingView />;
+  if (state.status === 'offline') return <OfflineView onRetry={state.refetch} />;
   if (state.status === 'error')
     return <ErrorView message={state.message} onRetry={state.refetch} />;
   if (isEmpty?.(state.data)) {

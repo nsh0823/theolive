@@ -33,7 +33,7 @@ export function ListRow({
       accessibilityRole="button"
       accessibilityLabel={trailingText ? `${label}, ${trailingText}` : label}
       accessibilityHint={accessibilityHint}
-      className="min-h-14 flex-row items-center gap-3 px-4 active:bg-accent"
+      className="min-h-14 flex-row items-center gap-3 active:bg-accent"
     >
       {icon ? <AppIcon icon={icon} tone={destructive ? 'destructive' : 'muted'} /> : null}
       <Text className={`flex-1 font-medium ${destructive ? 'text-destructive' : ''}`}>{label}</Text>
@@ -52,7 +52,7 @@ export function ListRow({
 export function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View
-      className="min-h-14 flex-row items-center justify-between px-4"
+      className="min-h-14 flex-row items-center justify-between"
       accessible
       accessibilityLabel={`${label}, ${value}`}
     >

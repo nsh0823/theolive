@@ -55,3 +55,17 @@ export function ErrorView({ message, onRetry }: ErrorProps) {
     </View>
   );
 }
+
+/** Disconnected: no offline ordering or local substitutes, so the only action is retry. */
+export function OfflineView({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View className="items-center gap-4 py-16" accessibilityRole="alert">
+      <AppIcon icon={WifiOff} tone="muted" size={STATE_ICON_SIZE} />
+      <Text className="font-semibold text-foreground">인터넷에 연결되어 있지 않아요</Text>
+      <Text size="sm" className="text-center text-muted-foreground">
+        연결을 확인한 뒤 다시 시도해 주세요. 주문과 결제는 연결된 상태에서만 할 수 있어요.
+      </Text>
+      <CtaButton label="다시 연결하기" onPress={onRetry} variant="outline" />
+    </View>
+  );
+}
