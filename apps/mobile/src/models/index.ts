@@ -39,6 +39,7 @@ export type CartLine = {
 };
 
 export type OrderLine = {
+  menuItemId: string;
   name: string;
   temperature: Temperature;
   quantity: number;
@@ -58,9 +59,28 @@ export type Order = {
   paidAmount: number;
 };
 
-export type Profile = { displayName: string };
+export type Profile = { displayName: string; email: string; loginProvider: string };
+
+/** UI-only payment choices. Which methods are really offered depends on the PG contract. */
+export const PAYMENT_METHOD = {
+  KAKAO_PAY: 'KAKAO_PAY',
+  NAVER_PAY: 'NAVER_PAY',
+  TOSS_PAY: 'TOSS_PAY',
+  CARD: 'CARD',
+} as const;
+export type PaymentMethod = (typeof PAYMENT_METHOD)[keyof typeof PAYMENT_METHOD];
+
+export const BIOMETRIC_STATUS = {
+  AVAILABLE: 'AVAILABLE',
+  NOT_ENROLLED: 'NOT_ENROLLED',
+  UNSUPPORTED: 'UNSUPPORTED',
+} as const;
+export type BiometricStatus = (typeof BIOMETRIC_STATUS)[keyof typeof BIOMETRIC_STATUS];
 
 export type StampSummary = { count: number; goal: number };
+
+/** Sample inquiry entry shown in the inquiry list (channel is still an open decision). */
+export type Inquiry = { id: string; title: string; at: string; isAnswered: boolean };
 export type StampExchangeOption = { id: string; requiredStamps: number; title: string };
 export type PointSummary = { balance: number };
 
@@ -86,8 +106,22 @@ export type LedgerEntry = {
   at: string;
 };
 
-export type NotificationKind = 'ORDER' | 'NOTICE';
-export type AppNotification = { id: string; kind: NotificationKind; title: string; at: string };
+export const NOTIFICATION_KIND = {
+  ORDER: 'ORDER',
+  PAYMENT: 'PAYMENT',
+  STAMP: 'STAMP',
+  COUPON: 'COUPON',
+  POINT: 'POINT',
+  NOTICE: 'NOTICE',
+} as const;
+export type NotificationKind = (typeof NOTIFICATION_KIND)[keyof typeof NOTIFICATION_KIND];
+export type AppNotification = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  at: string;
+  isRead: boolean;
+};
 
 export type Notice = { id: string; title: string; body: string; publishedAt: string };
 

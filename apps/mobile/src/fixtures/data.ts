@@ -7,8 +7,10 @@ import {
   COUPON_STATUS,
   ORDER_STATUS,
   ORDER_TYPE,
+  NOTIFICATION_KIND,
   TEMPERATURE,
   type AppNotification,
+  type Inquiry,
   type Coupon,
   type LedgerEntry,
   type MenuCategory,
@@ -22,11 +24,16 @@ import {
   type StampSummary,
 } from '@/models';
 
-export const FIXTURE_PROFILE: Profile = { displayName: '피터' };
+export const FIXTURE_PROFILE: Profile = {
+  displayName: '피터',
+  email: 'peter@example.com',
+  loginProvider: '카카오',
+};
 
 export const FIXTURE_CATEGORIES: MenuCategory[] = [
   { id: 'coffee', name: '커피' },
   { id: 'latte', name: '라떼' },
+  { id: 'non-coffee', name: '논커피' },
   { id: 'tea', name: '티' },
   { id: 'dessert', name: '디저트' },
 ];
@@ -71,6 +78,15 @@ export const FIXTURE_MENU: MenuItem[] = [
     isSoldOut: true,
   },
   {
+    id: 'choco-milk',
+    categoryId: 'non-coffee',
+    name: '초코 우유',
+    description: '진한 초콜릿을 부드러운 우유에 더했어요',
+    price: 5200,
+    temperatures: BOTH,
+    isSoldOut: false,
+  },
+  {
     id: 'green-tea',
     categoryId: 'tea',
     name: '그린티',
@@ -89,8 +105,6 @@ export const FIXTURE_MENU: MenuItem[] = [
     isSoldOut: false,
   },
 ];
-
-export const FIXTURE_RECENT_MENU_IDS: string[] = ['americano', 'latte', 'cold-brew'];
 
 export const FIXTURE_STAMPS: StampSummary = { count: 7, goal: 10 };
 export const FIXTURE_POINTS: PointSummary = { balance: 12000 };
@@ -143,7 +157,15 @@ export const FIXTURE_ORDERS: Order[] = [
     placedAt: '2026.11.04 13:50',
     status: ORDER_STATUS.PREPARING,
     orderType: ORDER_TYPE.TAKEOUT,
-    lines: [{ name: '아메리카노', temperature: TEMPERATURE.ICE, quantity: 2, unitPrice: 4500 }],
+    lines: [
+      {
+        menuItemId: 'americano',
+        name: '아메리카노',
+        temperature: TEMPERATURE.ICE,
+        quantity: 2,
+        unitPrice: 4500,
+      },
+    ],
     menuAmount: 9000,
     couponDiscount: 0,
     pointsUsed: 3000,
@@ -156,8 +178,20 @@ export const FIXTURE_ORDERS: Order[] = [
     status: ORDER_STATUS.COMPLETED,
     orderType: ORDER_TYPE.DINE_IN,
     lines: [
-      { name: '카페 라떼', temperature: TEMPERATURE.HOT, quantity: 1, unitPrice: 5000 },
-      { name: '플레인 스콘', temperature: TEMPERATURE.HOT, quantity: 1, unitPrice: 3800 },
+      {
+        menuItemId: 'latte',
+        name: '카페 라떼',
+        temperature: TEMPERATURE.HOT,
+        quantity: 1,
+        unitPrice: 5000,
+      },
+      {
+        menuItemId: 'scone',
+        name: '플레인 스콘',
+        temperature: TEMPERATURE.HOT,
+        quantity: 1,
+        unitPrice: 3800,
+      },
     ],
     menuAmount: 8800,
     couponDiscount: 0,
@@ -170,7 +204,15 @@ export const FIXTURE_ORDERS: Order[] = [
     placedAt: '2026.10.20 09:12',
     status: ORDER_STATUS.REJECTED,
     orderType: ORDER_TYPE.TAKEOUT,
-    lines: [{ name: '콜드브루', temperature: TEMPERATURE.ICE, quantity: 1, unitPrice: 5000 }],
+    lines: [
+      {
+        menuItemId: 'cold-brew',
+        name: '콜드브루',
+        temperature: TEMPERATURE.ICE,
+        quantity: 1,
+        unitPrice: 5000,
+      },
+    ],
     menuAmount: 5000,
     couponDiscount: 0,
     pointsUsed: 0,
@@ -181,12 +223,58 @@ export const FIXTURE_ORDERS: Order[] = [
 export const FIXTURE_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'n1',
-    kind: 'ORDER',
+    kind: NOTIFICATION_KIND.ORDER,
     title: '메뉴가 준비되었어요. (A-34) 픽업대에서 메뉴를 픽업해 주세요.',
     at: '2026.11.04 13:53',
+    isRead: false,
   },
-  { id: 'n2', kind: 'ORDER', title: '주문이 접수되었어요. (A-34)', at: '2026.11.04 13:51' },
-  { id: 'n3', kind: 'NOTICE', title: '11월 영업시간 안내', at: '2026.11.01 10:00' },
+  {
+    id: 'n2',
+    kind: NOTIFICATION_KIND.ORDER,
+    title: '주문이 접수되었어요. (A-34)',
+    at: '2026.11.04 13:51',
+    isRead: false,
+  },
+  {
+    id: 'n3',
+    kind: NOTIFICATION_KIND.PAYMENT,
+    title: '6,000원 결제가 완료되었어요. (A-34)',
+    at: '2026.11.04 13:50',
+    isRead: true,
+  },
+  {
+    id: 'n4',
+    kind: NOTIFICATION_KIND.STAMP,
+    title: '올리브 스탬프 1개가 적립되었어요.',
+    at: '2026.11.03 14:50',
+    isRead: true,
+  },
+  {
+    id: 'n5',
+    kind: NOTIFICATION_KIND.COUPON,
+    title: '아메리카노 또는 라떼 쿠폰으로 교환했어요.',
+    at: '2026.10.15 11:20',
+    isRead: true,
+  },
+  {
+    id: 'n6',
+    kind: NOTIFICATION_KIND.POINT,
+    title: '쿠폰 포인트 15,000원이 등록되었어요.',
+    at: '2026.11.01 09:30',
+    isRead: true,
+  },
+  {
+    id: 'n7',
+    kind: NOTIFICATION_KIND.NOTICE,
+    title: '11월 영업시간 안내',
+    at: '2026.11.01 10:00',
+    isRead: true,
+  },
+];
+
+export const FIXTURE_INQUIRIES: Inquiry[] = [
+  { id: 'q1', title: '영수증 발급 문의', at: '2026.10.29', isAnswered: true },
+  { id: 'q2', title: '쿠폰 사용 방법 문의', at: '2026.11.02', isAnswered: false },
 ];
 
 export const FIXTURE_NOTICES: Notice[] = [

@@ -5,6 +5,8 @@
 import { successState, type QueryState } from '@/lib/queryState';
 import type {
   AppNotification,
+  BiometricStatus,
+  Inquiry,
   Coupon,
   LedgerEntry,
   MenuCategory,
@@ -17,18 +19,13 @@ import type {
   StampExchangeOption,
   StampSummary,
 } from '@/models';
+import { BIOMETRIC_STATUS } from '@/models';
 import * as data from './data';
 
 export const useProfileQuery = (): QueryState<Profile> => successState(data.FIXTURE_PROFILE);
 export const useCategoriesQuery = (): QueryState<MenuCategory[]> =>
   successState(data.FIXTURE_CATEGORIES);
 export const useMenuQuery = (): QueryState<MenuItem[]> => successState(data.FIXTURE_MENU);
-export const useRecentMenuQuery = (): QueryState<MenuItem[]> =>
-  successState(
-    data.FIXTURE_RECENT_MENU_IDS.flatMap((id) =>
-      data.FIXTURE_MENU.filter((item) => item.id === id),
-    ),
-  );
 export const useStampsQuery = (): QueryState<StampSummary> => successState(data.FIXTURE_STAMPS);
 export const usePointsQuery = (): QueryState<PointSummary> => successState(data.FIXTURE_POINTS);
 export const useStampExchangeQuery = (): QueryState<StampExchangeOption[]> =>
@@ -54,3 +51,9 @@ export function useOrderQuery(orderId: string): QueryState<Order | null> {
 export function useMenuItemQuery(itemId: string): QueryState<MenuItem | null> {
   return successState(data.FIXTURE_MENU.find((item) => item.id === itemId) ?? null);
 }
+
+export const useInquiriesQuery = (): QueryState<Inquiry[]> => successState(data.FIXTURE_INQUIRIES);
+
+/** Stub: real value comes from the device (expo-local-authentication) once approved. */
+export const useBiometricStatusQuery = (): QueryState<BiometricStatus> =>
+  successState(BIOMETRIC_STATUS.AVAILABLE);
